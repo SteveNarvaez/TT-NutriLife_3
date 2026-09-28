@@ -1,0 +1,15 @@
+# Dependencias de Node.js (¡Esto JAMÁS se sube porque pesa muchísimo!)
+node_modules/
+
+# Logs
+npm-debug.log*
+
+# Builds de React
+client/dist/
+.env
+# --- NOTA ---
+# Normalmente aquí pondría .env y google-key.json, 
+# pero como decidiste subirlos para tu equipo, los dejo comentados:
+# .env
+# google-key.json
+server/config/google-key.json
