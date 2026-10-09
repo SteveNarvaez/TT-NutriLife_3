@@ -151,7 +151,7 @@ async function generarDietaCompleta({ id_usuario }) {
   );
 
   if (userQuery.rows.length === 0) {
-    return { error: 'No encontré tu evaluación previa. Escribe "evaluación" para empezar.' };
+    return { error: 'No encontré tu evaluación previa. Escribe evaluación para empezar.' };
   }
 
   const { tmb_calculado, objetivo_actual, peso_kg } = userQuery.rows[0];
@@ -159,57 +159,74 @@ async function generarDietaCompleta({ id_usuario }) {
   const objLimpio = objetivo_actual.toLowerCase();
 
   let protGramos, grasaGramos, tipoDieta;
-
-  if (objLimpio.includes('perder') || objLimpio.includes('definicion') || objLimpio.includes('grasa')) {
-    tipoDieta = 'Definición (Pérdida de grasa) 🔥';
-    protGramos = peso_kg * 2.2;
-    grasaGramos = peso_kg * 0.8;
-  } else if (objLimpio.includes('ganar') || objLimpio.includes('volumen') || objLimpio.includes('masa')) {
-    tipoDieta = 'Volumen (Ganar masa) 📈';
-    protGramos = peso_kg * 2.0;
-    grasaGramos = peso_kg * 1.0;
+  if (objLimpio.includes('perder') || objLimpio.includes('grasa')) {
+    tipoDieta = 'Definición 🔥'; protGramos = peso_kg * 2.2; grasaGramos = peso_kg * 0.8;
+  } else if (objLimpio.includes('ganar') || objLimpio.includes('masa')) {
+    tipoDieta = 'Volumen 📈'; protGramos = peso_kg * 2.0; grasaGramos = peso_kg * 1.0;
   } else {
-    tipoDieta = 'Mantenimiento (Recomposición) ⚖️';
-    protGramos = peso_kg * 1.8;
-    grasaGramos = peso_kg * 1.0;
+    tipoDieta = 'Mantenimiento ⚖️'; protGramos = peso_kg * 1.8; grasaGramos = peso_kg * 1.0;
   }
 
   const carbGramos = Math.round((caloriasMeta - (protGramos * 4) - (grasaGramos * 9)) / 4);
-  protGramos = Math.round(protGramos);
+  protGramos  = Math.round(protGramos);
   grasaGramos = Math.round(grasaGramos);
 
-  const comidaQuery = await pool.query(`SELECT * FROM catalogo_comida`);
-  const alimentos = comidaQuery.rows;
-
+  const alimentos    = (await pool.query(`SELECT * FROM catalogo_comida`)).rows;
   const proteinas    = alimentos.filter(a => a.grupo_nutricional.toUpperCase() === 'AOA');
-  const guarniciones = alimentos.filter(a => ['cereales', 'leguminosas'].some(g => a.grupo_nutricional.toLowerCase().includes(g)));
-  const frescos      = alimentos.filter(a => ['fruta', 'verdura'].some(g => a.grupo_nutricional.toLowerCase().includes(g)));
+  const guarniciones = alimentos.filter(a => ['cereales','leguminosas'].some(g => a.grupo_nutricional.toLowerCase().includes(g)));
+  const frescos      = alimentos.filter(a => ['fruta','verdura'].some(g => a.grupo_nutricional.toLowerCase().includes(g)));
+  const rand         = arr => arr[Math.floor(Math.random() * arr.length)];
 
-  const rand = arr => arr[Math.floor(Math.random() * arr.length)];
+  const momentos = [
+    { nombre: 'Desayuno', pct: 0.30 },
+    { nombre: 'Comida',   pct: 0.40 },
+    { nombre: 'Cena',     pct: 0.30 },
+  ];
 
-  const armarComida = (nombre, pct) => {
-    const kcal = Math.round(caloriasMeta * pct);
+  const comidas = [];
+
+  for (const momento of momentos) {
+    const kcal = Math.round(caloriasMeta * momento.pct);
     const pro  = rand(proteinas);
     const carb = rand(guarniciones);
     const fres = rand(frescos);
-    return {
-      tiempo: nombre,
+
+    const porPro  = parseFloat(((kcal * 0.35 / pro.calorias_kcal)  * pro.cantidad_base).toFixed(2));
+    const porCarb = parseFloat(((kcal * 0.40 / carb.calorias_kcal) * carb.cantidad_base).toFixed(2));
+    const porFres = parseFloat(((kcal * 0.25 / fres.calorias_kcal) * fres.cantidad_base).toFixed(2));
+
+    // ✅ Guardar en dieta_diaria para que Plan Diario la use
+    await pool.query(
+      `INSERT INTO dieta_diaria 
+         (id_usuario, momento_dia, id_alimento_proteina, id_alimento_guarnicion, id_alimento_fresco,
+          porciones_proteina, porciones_guarnicion, porciones_fresco, fecha)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,CURRENT_DATE)
+       ON CONFLICT (id_usuario, momento_dia, fecha) 
+       DO UPDATE SET
+         id_alimento_proteina   = EXCLUDED.id_alimento_proteina,
+         id_alimento_guarnicion = EXCLUDED.id_alimento_guarnicion,
+         id_alimento_fresco     = EXCLUDED.id_alimento_fresco,
+         porciones_proteina     = EXCLUDED.porciones_proteina,
+         porciones_guarnicion   = EXCLUDED.porciones_guarnicion,
+         porciones_fresco       = EXCLUDED.porciones_fresco`,
+      [id_usuario, momento.nombre,
+       pro.id_comida, carb.id_comida, fres.id_comida,
+       porPro, porCarb, porFres]
+    );
+
+    comidas.push({
+      tiempo: `${momento.nombre}`,
       calorias: kcal,
-      proteina: `${pro.nombre} (${((kcal * 0.35 / pro.calorias_kcal) * pro.cantidad_base).toFixed(1)} ${pro.unidad_medida})`,
-      guarnicion: `${carb.nombre} (${((kcal * 0.40 / carb.calorias_kcal) * carb.cantidad_base).toFixed(1)} ${carb.unidad_medida})`,
-      fresco: `${fres.nombre} (${((kcal * 0.25 / fres.calorias_kcal) * fres.cantidad_base).toFixed(1)} ${fres.unidad_medida})`
-    };
-  };
+      proteina:   `${pro.nombre}  (${porPro} ${pro.unidad_medida})`,
+      guarnicion: `${carb.nombre} (${porCarb} ${carb.unidad_medida})`,
+      fresco:     `${fres.nombre} (${porFres} ${fres.unidad_medida})`,
+    });
+  }
 
   return {
-    tipoDieta,
-    caloriasMeta,
+    tipoDieta, caloriasMeta,
     macros: { proteina: protGramos, carbohidratos: carbGramos, grasas: grasaGramos },
-    comidas: [
-      armarComida('🌅 Desayuno', 0.30),
-      armarComida('🍲 Comida', 0.40),
-      armarComida('🌙 Cena', 0.30)
-    ]
+    comidas,
   };
 }
 
@@ -218,6 +235,7 @@ async function generarDietaCompleta({ id_usuario }) {
 // ═══════════════════════════════════════════════════
 
 const tools = [{
+
   functionDeclarations: [
     {
       name: 'buscarAlimentos',
@@ -230,6 +248,22 @@ const tools = [{
         }
       }
     },
+    {
+  name: 'guardarEvaluacion',
+  description: 'Guarda la evaluación inicial del usuario con sus datos físicos y calcula su TMB. Úsala cuando tengas todos los datos del usuario nuevo.',
+  parameters: {
+    type: 'OBJECT',
+    properties: {
+      id_usuario:       { type: 'INTEGER', description: 'ID del usuario' },
+      edad:             { type: 'INTEGER', description: 'Edad en años' },
+      peso_kg:          { type: 'NUMBER',  description: 'Peso en kilogramos' },
+      altura_cm:        { type: 'NUMBER',  description: 'Altura en centímetros' },
+      nivel_actividad:  { type: 'STRING',  description: 'sedentario, ligero, moderado o intenso' },
+      objetivo:         { type: 'STRING',  description: 'perder peso, ganar masa o mantenerse' }
+    },
+    required: ['id_usuario', 'edad', 'peso_kg', 'altura_cm', 'nivel_actividad', 'objetivo']
+  }
+     },
     {
         name: 'buscarEjercicios',
         description: 'Busca ejercicios del catálogo por grupo muscular. Automáticamente ajusta la cantidad según el nivel del usuario y las repeticiones según su objetivo. SIEMPRE pasa id_usuario para personalizar.',
@@ -303,7 +337,8 @@ const funcionesDisponibles = {
   obtenerPerfilUsuario,
   obtenerConsumoHoy,
   actualizarPeso,
-  generarDietaCompleta
+  generarDietaCompleta,
+  guardarEvaluacion,
 };
 
 // Funciones que necesitan id_usuario inyectado automáticamente
@@ -312,6 +347,7 @@ const funcionesConUsuario = [
   'obtenerConsumoHoy',
   'actualizarPeso',
   'generarDietaCompleta',
+  'guardarEvaluacion',
   'buscarEjercicios'
 ];
 
@@ -339,11 +375,48 @@ async function llamarGeminiConReintento(payload, intentos = 3, espera = 1500) {
     }
   }
 }
+async function guardarEvaluacion({ id_usuario, edad, peso_kg, altura_cm, nivel_actividad, objetivo }) {
+  // Calcular TMB (fórmula Mifflin-St Jeor)
+  let tmb = (10 * peso_kg) + (6.25 * altura_cm) - (5 * edad) + 5;
+  
+  const multiplicadores = {
+    'sedentario': 1.2,
+    'ligero': 1.375,
+    'moderado': 1.55,
+    'intenso': 1.725
+  };
+  
+  const mult = multiplicadores[nivel_actividad.toLowerCase()] || 1.55;
+  let metaCalorica = Math.round(tmb * mult);
+  
+  // Ajustar según objetivo
+  if (objetivo.toLowerCase().includes('perder')) metaCalorica -= 500;
+  else if (objetivo.toLowerCase().includes('ganar')) metaCalorica += 400;
 
+  await pool.query(
+    `INSERT INTO historial_medidas 
+     (id_usuario, peso_kg, altura_cm, nivel_actividad, tmb_calculado, objetivo_actual)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [id_usuario, peso_kg, altura_cm, nivel_actividad, metaCalorica, objetivo]
+  );
+
+  return {
+    success: true,
+    tmb: metaCalorica,
+    mensaje: `¡Evaluación completada! Tu meta calórica diaria es ${metaCalorica} kcal para ${objetivo}. 🎯`
+  };
+}
 const enviarMensaje = async (req, res) => {
   try {
     const { message, historial = [] } = req.body;
     const userId = req.body.userId;
+        // ← NUEVO: verificar si el usuario ya tiene perfil
+    const perfilExiste = await pool.query(
+      `SELECT id_medida FROM historial_medidas 
+       WHERE id_usuario = $1 LIMIT 1`,
+      [userId]
+    );
+    const esNuevoUsuario = perfilExiste.rows.length === 0;
 
     // System prompt con userId inyectado — Gemini nunca necesita pedírselo al usuario
     const SYSTEM_PROMPT = `Eres el Asistente Inteligente de NutriLife, una app de nutrición y ejercicio personalizado, desarrollada con la colaboración del Entrenador Personal certificado MARTÍNEZ ESPINOSA CARLOS JOSUÉ.
@@ -365,7 +438,9 @@ CUANDO TE PREGUNTEN "¿en qué te basas?" O "¿cuáles son tus fuentes?":
 CONTEXTO DE SESIÓN:
 - El ID del usuario autenticado es: ${userId}
 - NUNCA le pidas al usuario su ID. Ya lo tienes. Úsalo directamente en las funciones.
+- ¿Es nuevo usuario sin evaluación?: ${esNuevoUsuario}
 - Cuando el usuario pida su dieta, usa generarDietaCompleta() directamente.
+- Si NO es nuevo usuario, saluda normalmente y ofrece las opciones del asistente.
 - Cuando el usuario quiera actualizar su peso, pregunta el valor y llama actualizarPeso().
 - Responde siempre en español, de forma amigable y motivadora. Usa emojis con moderación.`;
 

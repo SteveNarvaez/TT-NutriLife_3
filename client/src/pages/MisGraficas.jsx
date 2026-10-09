@@ -1,104 +1,359 @@
 import React, { useState, useEffect } from 'react';
-// Añadimos BarChart y Bar a las importaciones
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const MisGraficas = ({ userId }) => {
-    const [datosPeso, setDatosPeso] = useState([]);
-    const [datosConstancia, setDatosConstancia] = useState([]); // Nuevo estado para la segunda gráfica
+// ─── Colores base ──────────────────────────────────────────────────────────
+const C = {
+  verde:       '#16a34a',
+  verdeClaro:  '#86efac',
+  verdeOscuro: '#14532d',
+  grisClaro:   '#e5e7eb',
+  proteina:    '#2a78d6',
+  carbs:       '#1baf7a',
+  grasas:      '#eb6834',
+};
 
-    useEffect(() => {
-        const obtenerDatos = async () => {
-            try {
-                const id = userId || "1"; 
+// ─── Dona SVG simple (sin librería) ───────────────────────────────────────
+function Dona({ pct, color, size = 120, label }) {
+  const r = 40;
+  const cx = size / 2;
+  const cy = size / 2;
+  const circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
 
-                // 1. Traemos los datos de la gráfica de Peso
-                const resPeso = await fetch(`http://localhost:3000/api/graficas/peso/${id}`);
-                const dataPeso = await resPeso.json();
-                setDatosPeso(dataPeso);
+  return (
+    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#e5e7eb" strokeWidth={10} />
+        <circle
+          cx={cx} cy={cy} r={r} fill="none"
+          stroke={color} strokeWidth={10}
+          strokeDasharray={`${dash} ${circ}`}
+          strokeLinecap="round"
+        />
+      </svg>
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)', textAlign: 'center'
+      }}>
+        <p style={{ fontSize: 18, fontWeight: 500, margin: 0, color: '#111' }}>{pct}%</p>
+        {label && <p style={{ fontSize: 10, color: '#9ca3af', margin: 0 }}>{label}</p>}
+      </div>
+    </div>
+  );
+}
 
-                // 2. Traemos los datos de la gráfica de Constancia (NUEVO)
-                const resConstancia = await fetch(`http://localhost:3000/api/graficas/constancia/${id}`);
-                const dataConstancia = await resConstancia.json();
-                setDatosConstancia(dataConstancia);
+// ─── Barra de macro ────────────────────────────────────────────────────────
+function MacroBarra({ nombre, valor, meta, color }) {
+  const pct = meta > 0 ? Math.min(Math.round((valor / meta) * 100), 100) : 0;
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+        <span style={{ fontSize: 12, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' }} />
+          {nombre}
+        </span>
+        <span style={{ fontSize: 12, fontWeight: 500, color: '#111' }}>{valor}g</span>
+      </div>
+      <div style={{ height: 5, background: '#e5e7eb', borderRadius: 3 }}>
+        <div style={{ height: 5, width: `${pct}%`, background: color, borderRadius: 3, transition: 'width 0.6s ease' }} />
+      </div>
+    </div>
+  );
+}
 
-            } catch (error) {
-                console.error("Error cargando las gráficas:", error);
-            }
-        };
+// ─── Tarjeta de stat ───────────────────────────────────────────────────────
+function StatCard({ label, valor, sub, subColor = '#9ca3af' }) {
+  return (
+    <div style={{
+      background: '#f9fafb', borderRadius: 10, padding: '14px 16px',
+      border: '1px solid #f0f0f0'
+    }}>
+      <p style={{ fontSize: 11, color: '#9ca3af', margin: '0 0 4px' }}>{label}</p>
+      <p style={{ fontSize: 22, fontWeight: 500, color: '#111', margin: 0 }}>{valor}</p>
+      {sub && <p style={{ fontSize: 11, color: subColor, margin: '4px 0 0' }}>{sub}</p>}
+    </div>
+  );
+}
 
-        obtenerDatos();
-    }, [userId]);
+// ─── Calendario de racha ───────────────────────────────────────────────────
+function CalendarioRacha({ fechasEntrenadas }) {
+  const hoy = new Date();
+  const inicio = new Date(hoy);
+  inicio.setDate(hoy.getDate() - 89);
 
-    return (
-        <div className="space-y-8 pb-10">
-            
-            {/* 🟢 GRÁFICA 1: PROGRESO DE PESO */}
-            <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
-                <h2 className="text-2xl font-bold text-green-800 mb-4">Mi Progreso de Peso</h2>
-                
-                {datosPeso.length > 0 ? (
-                    <div style={{ width: '100%', height: 300, minWidth: 0 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={datosPeso} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="fecha" tick={{fill: '#6b7280'}} tickMargin={10} />
-                                <YAxis domain={['auto', 'auto']} tick={{fill: '#6b7280'}} />
-                                <Tooltip 
-                                    contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                />
-                                <Line 
-                                    type="monotone" 
-                                    dataKey="peso" 
-                                    name="Peso (kg)"
-                                    stroke="#16a34a" 
-                                    strokeWidth={4}
-                                    activeDot={{ r: 8, fill: '#15803d', stroke: 'white', strokeWidth: 2 }} 
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-                ) : (
-                    <div className="h-40 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-xl">
-                        <p className="text-gray-400 text-center">Aún no hay suficientes datos de peso registrados.</p>
-                    </div>
-                )}
-            </div>
+  const dias = [];
+  for (let d = new Date(inicio); d <= hoy; d.setDate(d.getDate() + 1)) {
+    dias.push(new Date(d));
+  }
 
-            {/* 📊 GRÁFICA 2: CONSTANCIA DIARIA */}
-            <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
-                <h2 className="text-2xl font-bold text-blue-800 mb-1">Mi Disciplina Semanal</h2>
-                <p className="text-gray-500 mb-6 text-sm">Porcentaje de tareas diarias completadas</p>
-                
-                {datosConstancia.length > 0 ? (
-                    <div style={{ width: '100%', height: 300, minWidth: 0 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={datosConstancia} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="fecha" tick={{fill: '#6b7280'}} tickMargin={10} />
-                                <YAxis domain={[0, 100]} tick={{fill: '#6b7280'}} tickFormatter={(tick) => `${tick}%`} />
-                                <Tooltip 
-                                    cursor={{fill: '#f3f4f6'}}
-                                    contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    formatter={(value) => [`${value}%`, 'Completado']}
-                                />
-                                <Bar 
-                                    dataKey="porcentaje" 
-                                    fill="#3b82f6" /* Color azul para diferenciar del peso */
-                                    radius={[6, 6, 0, 0]} /* Bordes redondeados arriba */
-                                    barSize={40}
-                                />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                ) : (
-                    <div className="h-40 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-xl">
-                        <p className="text-gray-400 text-center">Ve a "Plan Diario" y guarda tu progreso de hoy para ver tu gráfica.</p>
-                    </div>
-                )}
-            </div>
+  // Completar primera semana con días vacíos
+  const primerDiaSemana = inicio.getDay() === 0 ? 6 : inicio.getDay() - 1;
+  const padding = Array(primerDiaSemana).fill(null);
+  const todosDias = [...padding, ...dias];
 
+  // Agrupar en semanas
+  const semanas = [];
+  for (let i = 0; i < todosDias.length; i += 7) {
+    semanas.push(todosDias.slice(i, i + 7));
+  }
+
+  const enSet = new Set(fechasEntrenadas);
+
+  const getColor = (fecha) => {
+    if (!fecha) return 'transparent';
+    const key = fecha.toISOString().split('T')[0];
+    return enSet.has(key) ? C.verde : '#e5e7eb';
+  };
+
+  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const diasLabel = ['L','M','X','J','V','S','D'];
+
+  // Calcular qué semanas tienen cambio de mes para los labels
+  const mesLabels = semanas.map((sem, i) => {
+    const primerDia = sem.find(d => d !== null);
+    if (!primerDia) return null;
+    if (i === 0) return meses[primerDia.getMonth()];
+    const semAnterior = semanas[i - 1];
+    const primerAnterior = semAnterior.find(d => d !== null);
+    if (primerAnterior && primerDia.getMonth() !== primerAnterior.getMonth()) {
+      return meses[primerDia.getMonth()];
+    }
+    return null;
+  });
+
+  return (
+    <div>
+      {/* Labels de meses */}
+      <div style={{ display: 'flex', gap: 3, marginBottom: 4, paddingLeft: 20 }}>
+        {semanas.map((_, i) => (
+          <div key={i} style={{ width: 13, fontSize: 10, color: '#9ca3af', flexShrink: 0 }}>
+            {mesLabels[i] || ''}
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+        {/* Días de semana */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingTop: 1 }}>
+          {diasLabel.map(d => (
+            <span key={d} style={{ fontSize: 9, color: '#9ca3af', height: 13, lineHeight: '13px' }}>{d}</span>
+          ))}
         </div>
+
+        {/* Grid */}
+        <div style={{ display: 'flex', gap: 3, flex: 1, flexWrap: 'nowrap', overflowX: 'auto' }}>
+          {semanas.map((sem, si) => (
+            <div key={si} style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0 }}>
+              {sem.map((dia, di) => (
+                <div
+                  key={di}
+                  title={dia ? dia.toLocaleDateString('es-MX') : ''}
+                  style={{
+                    width: 13, height: 13, borderRadius: 2,
+                    background: getColor(dia),
+                    cursor: dia ? 'default' : 'default'
+                  }}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Leyenda */}
+      <div style={{ display: 'flex', gap: 12, marginTop: 10, justifyContent: 'flex-end', fontSize: 11, color: '#9ca3af' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 2, background: '#e5e7eb', display: 'inline-block' }} />
+          Sin actividad
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 2, background: C.verde, display: 'inline-block' }} />
+          Entrenamiento
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────
+const MisGraficas = ({ userId }) => {
+  const [macros,       setMacros]       = useState({ proteina: 0, carbohidratos: 0, grasas: 0, calorias: 0 });
+  const [stats,        setStats]        = useState({ peso: 0, meta_calorica: 0, entrenamientos_mes: 0, racha_dias: 0 });
+  const [racha,        setRacha]        = useState([]);
+  const [cargando,     setCargando]     = useState(true);
+
+  useEffect(() => {
+    const id = userId || localStorage.getItem('userId') || '1';
+
+    const cargar = async () => {
+      try {
+        const [resMacros, resStats, resRacha] = await Promise.all([
+          fetch(`http://localhost:3000/api/graficas/macros/${id}`),
+          fetch(`http://localhost:3000/api/graficas/stats/${id}`),
+          fetch(`http://localhost:3000/api/graficas/racha/${id}`),
+        ]);
+
+        const [dataMacros, dataStats, dataRacha] = await Promise.all([
+          resMacros.json(), resStats.json(), resRacha.json()
+        ]);
+
+        setMacros(dataMacros);
+        setStats(dataStats);
+        setRacha(dataRacha.fechas || []);
+      } catch (err) {
+        console.error('Error cargando gráficas:', err);
+      } finally {
+        setCargando(false);
+      }
+    };
+
+    cargar();
+  }, [userId]);
+
+  if (cargando) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
+        <p style={{ color: '#9ca3af', fontSize: 14 }}>Cargando tus estadísticas...</p>
+      </div>
     );
+  }
+
+  const metaCal   = Number(stats.meta_calorica) || 2244;
+  const calHoy    = Number(macros.calorias) || 0;
+  const pctCal    = Math.min(Math.round((calHoy / metaCal) * 100), 100);
+
+  const protMeta  = Math.round(Number(stats.peso) * 2.0) || 120;
+  const carbMeta  = Math.round((metaCal * 0.45) / 4) || 250;
+  const grasaMeta = Math.round((metaCal * 0.25) / 9) || 60;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 32 }}>
+
+      {/* ── TARJETAS RESUMEN ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        <StatCard
+          label="Peso actual"
+          valor={`${stats.peso} kg`}
+          sub="último registro"
+        />
+        <StatCard
+          label="Racha actual"
+          valor={`${stats.racha_dias} días`}
+          sub={stats.racha_dias >= 3 ? '🔥 ¡Sigue así!' : 'Entrena hoy'}
+          subColor={stats.racha_dias >= 3 ? '#16a34a' : '#9ca3af'}
+        />
+        <StatCard
+          label="Calorías hoy"
+          valor={calHoy.toLocaleString()}
+          sub={`/ ${metaCal.toLocaleString()} kcal meta`}
+        />
+        <StatCard
+          label="Entrenamientos"
+          valor={stats.entrenamientos_mes}
+          sub="este mes"
+        />
+      </div>
+
+      {/* ── RACHA DE ENTRENAMIENTOS ── */}
+      <div style={{
+        background: '#fff', borderRadius: 16, padding: '20px 24px',
+        border: '1px solid #f0f0f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: '#14532d', margin: '0 0 2px' }}>
+              Racha de entrenamientos
+            </h2>
+            <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>Últimos 90 días</p>
+          </div>
+          <div style={{
+            background: '#f0fdf4', color: '#16a34a', borderRadius: 8,
+            padding: '4px 10px', fontSize: 12, fontWeight: 500
+          }}>
+            {racha.length} días entrenados
+          </div>
+        </div>
+        <CalendarioRacha fechasEntrenadas={racha} />
+      </div>
+
+      {/* ── MACROS + CALORÍAS ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+        {/* Macros del día */}
+        <div style={{
+          background: '#fff', borderRadius: 16, padding: '20px 24px',
+          border: '1px solid #f0f0f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+        }}>
+          <h2 style={{ fontSize: 18, fontWeight: 600, color: '#111', margin: '0 0 2px' }}>Macros de hoy</h2>
+          <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 20px' }}>Distribución de nutrientes</p>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 20 }}>
+            <Dona
+              pct={pctCal}
+              color={C.verde}
+              size={90}
+              label="kcal"
+            />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <MacroBarra nombre="Proteína"      valor={Number(macros.proteina) || 0}      meta={protMeta}  color={C.proteina} />
+              <MacroBarra nombre="Carbohidratos" valor={Number(macros.carbohidratos) || 0} meta={carbMeta}  color={C.carbs}    />
+              <MacroBarra nombre="Grasas"        valor={Number(macros.grasas) || 0}        meta={grasaMeta} color={C.grasas}   />
+            </div>
+          </div>
+
+          <div style={{
+            display: 'flex', justifyContent: 'space-between',
+            background: '#f9fafb', borderRadius: 8, padding: '10px 14px'
+          }}>
+            {[
+              { label: 'Proteína',      val: `${macros.proteina || 0}g`,      color: C.proteina },
+              { label: 'Carbohidratos', val: `${macros.carbohidratos || 0}g`, color: C.carbs    },
+              { label: 'Grasas',        val: `${macros.grasas || 0}g`,        color: C.grasas   },
+            ].map(m => (
+              <div key={m.label} style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: 11, color: '#9ca3af', margin: '0 0 2px' }}>{m.label}</p>
+                <p style={{ fontSize: 14, fontWeight: 500, color: m.color, margin: 0 }}>{m.val}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Progreso calórico */}
+        <div style={{
+          background: '#fff', borderRadius: 16, padding: '20px 24px',
+          border: '1px solid #f0f0f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+        }}>
+          <h2 style={{ fontSize: 18, fontWeight: 600, color: '#111', margin: '0 0 2px' }}>Progreso calórico</h2>
+          <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 20px' }}>Meta diaria: {metaCal.toLocaleString()} kcal</p>
+
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+            <Dona pct={pctCal} color={C.verde} size={130} label="completado" />
+          </div>
+
+          <div style={{
+            display: 'flex', justifyContent: 'space-between',
+            background: '#f9fafb', borderRadius: 8, padding: '10px 14px'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: 11, color: '#9ca3af', margin: '0 0 2px' }}>Consumidas</p>
+              <p style={{ fontSize: 14, fontWeight: 500, color: '#111', margin: 0 }}>{calHoy.toLocaleString()}</p>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: 11, color: '#9ca3af', margin: '0 0 2px' }}>Restantes</p>
+              <p style={{ fontSize: 14, fontWeight: 500, color: '#16a34a', margin: 0 }}>
+                {Math.max(metaCal - calHoy, 0).toLocaleString()}
+              </p>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: 11, color: '#9ca3af', margin: '0 0 2px' }}>Meta</p>
+              <p style={{ fontSize: 14, fontWeight: 500, color: '#111', margin: 0 }}>{metaCal.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  );
 };
 
 export default MisGraficas;

@@ -2,26 +2,21 @@ const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 
 const register = async (req, res) => {
-    const { nombre, email, password, fecha_nacimiento, sexo, padece_enfermedad, enfermedades_declaradas, apto_alto_impacto, acepto_disclaimer } = req.body;
+    const { nombre, email, password, fecha_nacimiento, sexo, acepto_disclaimer } = req.body;
     try {
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
-        await pool.query('BEGIN');
+
         const userResult = await pool.query(
             `INSERT INTO usuarios (nombre, email, password_hash, fecha_nacimiento, sexo, acepto_disclaimer) 
              VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_usuario`,
-            [nombre, email, passwordHash, fecha_nacimiento, sexo, acepto_disclaimer]
+            [nombre, email, passwordHash, fecha_nacimiento, sexo, acepto_disclaimer || false]
         );
+
         const idUsuario = userResult.rows[0].id_usuario;
-        await pool.query(
-            `INSERT INTO perfil_salud_triaje (id_usuario, padece_enfermedad, enfermedades_declaradas, apto_alto_impacto) 
-             VALUES ($1, $2, $3, $4)`,
-            [idUsuario, padece_enfermedad, enfermedades_declaradas, apto_alto_impacto]
-        );
-        await pool.query('COMMIT');
         res.status(201).json({ message: "Usuario registrado", userId: idUsuario });
+
     } catch (error) {
-        await pool.query('ROLLBACK');
         console.error("ERROR REGISTRO:", error);
         res.status(500).json({ error: "Error en registro" });
     }

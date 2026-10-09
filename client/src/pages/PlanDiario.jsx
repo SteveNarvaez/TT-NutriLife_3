@@ -37,33 +37,66 @@ const PlanDiario = ({ userId }) => {
   const tareasCompletadas = tareas.filter(t => t.completado).length;
   const progreso = Math.round((tareasCompletadas / tareas.length) * 100);
 
-  const toggleTarea = (id) => {
-    const nuevasTareas = tareas.map(tarea => 
-      tarea.id === id ? { ...tarea, completado: !tarea.completado } : tarea
-    );
-    setTareas(nuevasTareas);
-    setGuardado(false); // Resetea el estado del botón si el usuario cambia algo
-  };
+const toggleTarea = async (id) => {
+  const tarea = tareas.find(t => t.id === id);
+  const nuevoEstado = !tarea.completado;
+
+  const nuevasTareas = tareas.map(t =>
+    t.id === id ? { ...t, completado: nuevoEstado } : t
+  );
+  setTareas(nuevasTareas);
+  setGuardado(false);
+
+  // ✅ Si es una comida y se marcó como completada → registrar en BD
+  if (tarea.tipo === 'dieta' && nuevoEstado) {
+    const momentoMap = {
+      'Desayuno Proteico': 'Desayuno',
+      'Comida Equilibrada': 'Comida',
+      'Cena Ligera':        'Cena',
+    };
+    const momento = momentoMap[tarea.titulo];
+    if (momento) {
+      const id_usuario = userId || localStorage.getItem('userId') || '1';
+      try {
+        await fetch('http://localhost:3000/api/plandiario/registrar-comida', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_usuario, momento_dia: momento })
+        });
+      } catch (err) {
+        console.error('Error registrando comida:', err);
+      }
+    }
+  }
+};
 
   // FUNCIÓN PARA GUARDAR EN LA BASE DE DATOS
-  const handleGuardarProgreso = async () => {
-    try {
-      const id = userId || "1";
-      const response = await fetch('http://localhost:3000/api/constancia/guardar', {
+const handleGuardarProgreso = async () => {
+  try {
+    const id = userId || localStorage.getItem('userId') || "1";
+
+    // 1. Guardar porcentaje de constancia (ya lo tenías)
+    await fetch('http://localhost:3000/api/constancia/guardar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_usuario: id, porcentaje: progreso })
+    });
+
+    // 2. ← NUEVO: Si completó la rutina, registrar entrenamiento
+    const hizoEjercicio = tareas.find(t => t.tipo === 'ejercicio')?.completado;
+    if (hizoEjercicio) {
+      await fetch('http://localhost:3000/api/rutina/registrar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_usuario: id, porcentaje: progreso })
+        body: JSON.stringify({ id_usuario: id })
       });
-
-      if (response.ok) {
-        setGuardado(true);
-      } else {
-        console.error("Error al intentar guardar el progreso.");
-      }
-    } catch (error) {
-      console.error("Error de red al guardar el porcentaje:", error);
     }
-  };
+
+    setGuardado(true);
+  } catch (error) {
+    console.error("Error de red al guardar el progreso:", error);
+  }
+};
 
   return (
     <div className="max-w-3xl mx-auto p-6">
