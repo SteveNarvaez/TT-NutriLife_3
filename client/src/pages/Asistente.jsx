@@ -27,12 +27,11 @@ const STYLES = `
   .nl-header-left { display: flex; align-items: center; gap: 11px; }
   .nl-avatar {
     width: 38px; height: 38px; border-radius: 50%;
-    background: #16a34a;
+    background: linear-gradient(135deg, #16a34a, #0d9488);
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
+    flex-shrink: 0; font-size: 18px;
   }
-  .nl-avatar svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .nl-header-title { font-size: 14.5px; font-weight: 600; color: #111; }
+  .nl-header-title { font-size: 14.5px; font-weight: 700; color: #111; }
   .nl-header-sub { font-size: 11.5px; color: #9ca3af; margin-top: 1px; display: flex; align-items: center; gap: 5px; }
   .nl-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block; }
   .nl-clear-btn {
@@ -42,7 +41,6 @@ const STYLES = `
     transition: background 0.15s, color 0.15s;
   }
   .nl-clear-btn:hover { background: #f9fafb; color: #374151; }
-  .nl-clear-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
 
   /* QUICK CHIPS */
   .nl-chips {
@@ -54,20 +52,19 @@ const STYLES = `
   }
   .nl-chips::-webkit-scrollbar { display: none; }
   .nl-chip {
-    white-space: nowrap; padding: 5px 11px; border-radius: 20px;
+    white-space: nowrap; padding: 5px 12px; border-radius: 20px;
     border: 1px solid #e5e7eb; background: #f9fafb;
     font-size: 12px; color: #6b7280; cursor: pointer;
     display: flex; align-items: center; gap: 5px;
     transition: all 0.15s; flex-shrink: 0;
   }
   .nl-chip:hover { border-color: #16a34a; color: #16a34a; background: #f0fdf4; }
-  .nl-chip svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
   /* MESSAGES */
   .nl-messages {
     flex: 1; overflow-y: auto;
     padding: 16px; display: flex;
-    flex-direction: column; gap: 10px;
+    flex-direction: column; gap: 12px;
     scroll-behavior: smooth;
     background: #fafafa;
   }
@@ -79,82 +76,210 @@ const STYLES = `
     margin: 4px 0;
   }
 
-  .nl-row { display: flex; gap: 8px; align-items: flex-end; }
+  .nl-row { display: flex; gap: 8px; align-items: flex-start; }
   .nl-row.nl-user { flex-direction: row-reverse; }
 
   .nl-msg-avatar {
-    width: 26px; height: 26px; border-radius: 50%;
-    background: #16a34a;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, #16a34a, #0d9488);
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
+    flex-shrink: 0; font-size: 14px; margin-top: 2px;
   }
-  .nl-msg-avatar svg { width: 12px; height: 12px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
   .nl-bubble {
     max-width: 78%; padding: 10px 14px;
-    border-radius: 16px; font-size: 13.5px; line-height: 1.6;
+    border-radius: 16px; font-size: 13.5px; line-height: 1.65;
     animation: nlFadeUp 0.22s ease;
   }
   .nl-bubble.nl-bot {
     background: #fff; border: 1px solid #e5e7eb;
-    color: #1f2937; border-bottom-left-radius: 4px;
+    color: #1f2937; border-top-left-radius: 4px;
   }
   .nl-bubble.nl-user {
     background: #16a34a; color: #fff;
-    border-bottom-right-radius: 4px;
+    border-top-right-radius: 4px;
   }
 
-  /* TARJETA DE DIETA / RUTINA */
-  .nl-card {
-    max-width: 84%; border-radius: 16px; border-bottom-left-radius: 4px;
+  /* ═══════════════════════════════════════
+     TARJETA DE RUTINA
+  ═══════════════════════════════════════ */
+  .nl-card-rutina {
+    max-width: 88%;
+    border-radius: 16px; border-top-left-radius: 4px;
     border: 1px solid #e5e7eb; overflow: hidden;
     background: #fff; animation: nlFadeUp 0.22s ease;
   }
-  .nl-card-header {
-    background: #16a34a; padding: 10px 14px;
-    color: #fff; font-size: 13px; font-weight: 600;
-    display: flex; align-items: center; gap: 7px;
+  .nl-rutina-header {
+    background: linear-gradient(135deg, #15803d, #0f766e);
+    padding: 11px 14px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   }
-  .nl-card-header svg { width: 15px; height: 15px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .nl-card-body { padding: 12px 14px; }
-
-  .nl-macros { display: flex; gap: 8px; margin-bottom: 10px; }
-  .nl-macro {
-    flex: 1; text-align: center; background: #f9fafb;
-    border: 1px solid #f0f0f0; border-radius: 10px; padding: 7px 4px;
+  .nl-rutina-badge {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 20px;
+    background: rgba(255,255,255,0.2); color: #fff;
   }
-  .nl-macro-val { font-size: 15px; font-weight: 600; color: #111; }
-  .nl-macro-lbl { font-size: 10.5px; color: #9ca3af; margin-top: 1px; }
+  .nl-rutina-title { font-size: 13.5px; font-weight: 700; color: #fff; flex: 1; min-width: 0; }
+  .nl-rutina-dia   { font-size: 11px; color: rgba(255,255,255,0.75); }
 
-  .nl-meal {
-    display: flex; align-items: flex-start; justify-content: space-between;
-    padding: 7px 0; border-top: 1px solid #f0f0f0; gap: 8px;
+  .nl-ejercicio-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid #f5f5f5;
   }
-  .nl-meal:first-child { border-top: none; }
-  .nl-meal-left { display: flex; align-items: center; gap: 7px; }
-  .nl-meal-icon { font-size: 14px; }
-  .nl-meal-name { font-size: 12.5px; font-weight: 500; color: #374151; }
-  .nl-meal-detail { font-size: 11.5px; color: #9ca3af; margin-top: 1px; }
-  .nl-meal-kcal { font-size: 12px; color: #6b7280; flex-shrink: 0; padding-top: 2px; }
+  .nl-ejercicio-row:last-child { border-bottom: none; }
+  .nl-ej-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #f0fdf4; border: 1px solid #dcfce7;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #16a34a;
+    flex-shrink: 0;
+  }
+  .nl-ej-info { flex: 1; min-width: 0; }
+  .nl-ej-nombre { font-size: 12.5px; font-weight: 600; color: #1f2937; }
+  .nl-ej-musculo { font-size: 10.5px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
+  .nl-ej-pills { display: flex; gap: 5px; flex-shrink: 0; }
+  .nl-pill {
+    font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 20px;
+    background: #f0fdf4; color: #16a34a;
+    border: 1px solid #dcfce7;
+    white-space: nowrap;
+  }
+  .nl-pill.grey { background: #f9fafb; color: #6b7280; border-color: #e5e7eb; }
 
-  .nl-exercise-item {
+  .nl-rutina-footer {
+    padding: 8px 14px; background: #fafafa;
+    border-top: 1px solid #f0f0f0;
+    font-size: 11.5px; color: #9ca3af;
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  .nl-descanso {
+    padding: 18px 14px; text-align: center;
+    font-size: 13px; color: #6b7280;
+  }
+  .nl-descanso-icon { font-size: 28px; margin-bottom: 6px; }
+
+  /* ═══════════════════════════════════════
+     TARJETA DE DIETA
+  ═══════════════════════════════════════ */
+  .nl-card-dieta {
+    max-width: 88%;
+    border-radius: 16px; border-top-left-radius: 4px;
+    border: 1px solid #e5e7eb; overflow: hidden;
+    background: #fff; animation: nlFadeUp 0.22s ease;
+  }
+  .nl-dieta-header {
+    background: linear-gradient(135deg, #d97706, #16a34a);
+    padding: 11px 14px;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 7px 0; border-top: 1px solid #f0f0f0;
+    gap: 10px;
   }
-  .nl-exercise-item:first-child { border-top: none; }
-  .nl-exercise-name { font-size: 12.5px; font-weight: 500; color: #374151; }
-  .nl-exercise-sub { font-size: 11.5px; color: #9ca3af; margin-top: 1px; }
-  .nl-exercise-badge {
-    font-size: 11px; padding: 3px 8px; border-radius: 6px;
-    background: #f0fdf4; color: #16a34a; font-weight: 500; flex-shrink: 0;
+  .nl-dieta-title { font-size: 13.5px; font-weight: 700; color: #fff; }
+  .nl-dieta-kcal-wrap { text-align: right; }
+  .nl-dieta-kcal { font-size: 20px; font-weight: 800; color: #fff; line-height: 1.1; }
+  .nl-dieta-kcal-label { font-size: 10px; color: rgba(255,255,255,0.75); }
+
+  .nl-macros-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border-bottom: 1px solid #f0f0f0;
   }
+  .nl-macro-cell {
+    padding: 9px 8px; text-align: center;
+    border-right: 1px solid #f0f0f0;
+  }
+  .nl-macro-cell:last-child { border-right: none; }
+  .nl-macro-val { font-size: 15px; font-weight: 700; }
+  .nl-macro-val.prot { color: #f97316; }
+  .nl-macro-val.carb { color: #8b5cf6; }
+  .nl-macro-val.fat  { color: #f59e0b; }
+  .nl-macro-lbl { font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
+
+  .nl-comida-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px; border-bottom: 1px solid #f5f5f5;
+  }
+  .nl-comida-row:last-child { border-bottom: none; }
+  .nl-comida-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: #f9fafb; border: 1px solid #f0f0f0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; flex-shrink: 0;
+  }
+  .nl-comida-info { flex: 1; min-width: 0; }
+  .nl-comida-tiempo { font-size: 10.5px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
+  .nl-comida-nombre { font-size: 12.5px; font-weight: 600; color: #1f2937; margin-top: 1px; }
+  .nl-comida-desc { font-size: 11.5px; color: #9ca3af; margin-top: 2px; line-height: 1.45; }
+  .nl-comida-override { font-size: 10px; color: #d97706; font-weight: 600; margin-top: 2px; }
+  .nl-comida-kcal {
+    font-size: 11.5px; font-weight: 700;
+    padding: 3px 8px; border-radius: 20px;
+    background: #f0fdf4; color: #16a34a;
+    flex-shrink: 0; margin-top: 3px;
+    border: 1px solid #dcfce7;
+  }
+
+  .nl-dieta-footer {
+    padding: 8px 14px; background: #fafafa;
+    border-top: 1px solid #f0f0f0;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11.5px; color: #9ca3af;
+  }
+  .nl-fenotipo-tag {
+    padding: 1px 8px; border-radius: 20px;
+    font-size: 10px; font-weight: 700;
+    background: rgba(139,92,246,0.12); color: #8b5cf6;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .nl-ajuste-pos { color: #16a34a; font-weight: 600; }
+  .nl-ajuste-neg { color: #ef4444; font-weight: 600; }
+
+  /* ═══════════════════════════════════════
+     TARJETA SELECTOR DE SPLIT
+  ═══════════════════════════════════════ */
+  .nl-card-split {
+    max-width: 88%;
+    border-radius: 16px; border-top-left-radius: 4px;
+    border: 1px solid #e5e7eb; overflow: hidden;
+    background: #fff; animation: nlFadeUp 0.22s ease;
+  }
+  .nl-split-header {
+    background: linear-gradient(135deg, #7c3aed, #16a34a);
+    padding: 11px 14px;
+  }
+  .nl-split-header-title { font-size: 13.5px; font-weight: 700; color: #fff; }
+  .nl-split-header-sub   { font-size: 11px; color: rgba(255,255,255,0.75); margin-top: 2px; }
+  .nl-split-opt {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-bottom: 1px solid #f5f5f5;
+    cursor: pointer; transition: background 0.12s;
+  }
+  .nl-split-opt:last-child { border-bottom: none; }
+  .nl-split-opt:hover { background: #f0fdf4; }
+  .nl-split-num {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: #f9fafb; border: 1px solid #e5e7eb;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #6b7280;
+    flex-shrink: 0;
+  }
+  .nl-split-info { flex: 1; min-width: 0; }
+  .nl-split-nombre { font-size: 12.5px; font-weight: 600; color: #1f2937; }
+  .nl-split-dias   { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+  .nl-split-tag {
+    font-size: 10px; font-weight: 600;
+    padding: 2px 7px; border-radius: 20px; flex-shrink: 0;
+  }
+  .nl-split-tag.pop  { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+  .nl-split-tag.clas { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+  .nl-split-tag.sci  { background: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; }
 
   /* TYPING */
   .nl-typing {
     display: flex; align-items: center; gap: 4px;
     padding: 10px 14px;
     background: #fff; border: 1px solid #e5e7eb;
-    border-radius: 16px; border-bottom-left-radius: 4px;
+    border-radius: 16px; border-top-left-radius: 4px;
     width: fit-content;
   }
   .nl-typing-dot {
@@ -187,11 +312,11 @@ const STYLES = `
     background: #16a34a; border: none; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; transition: opacity 0.15s, transform 0.1s;
+    font-size: 16px;
   }
   .nl-send-btn:hover { opacity: 0.85; }
   .nl-send-btn:active { transform: scale(0.94); }
   .nl-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .nl-send-btn svg { width: 17px; height: 17px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
   @keyframes nlFadeUp {
     from { opacity: 0; transform: translateY(7px); }
@@ -203,44 +328,203 @@ const STYLES = `
   }
 `;
 
-// ─── Íconos SVG inline ─────────────────────────────────────────────────────
-const IconHeart  = () => <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>;
-const IconSalad  = () => <svg viewBox="0 0 24 24"><path d="M12 2a9 9 0 0 1 9 9"/><path d="M12 2a9 9 0 0 0-9 9"/><path d="M3 11h18"/><path d="M12 2v9"/><path d="M4.22 15a9 9 0 0 0 15.56 0"/></svg>;
-const IconDumbbell = () => <svg viewBox="0 0 24 24"><path d="M6.5 6.5h11M6.5 17.5h11M3 9.5h3M18 9.5h3M3 14.5h3M18 14.5h3M3 9.5v5M21 9.5v5M6 6.5v11M18 6.5v11"/></svg>;
-const IconUser   = () => <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
-const IconFlame  = () => <svg viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>;
-const IconScale  = () => <svg viewBox="0 0 24 24"><path d="M12 3v2M3 9h18M7 9l3 9M17 9l-3 9M5 21h14"/></svg>;
-const IconTrash  = () => <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>;
-const IconSend   = () => <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
-
 // ─── Chips de acceso rápido ────────────────────────────────────────────────
 const CHIPS = [
-  { label: 'Mi dieta',         icon: <IconSalad />,    msg: 'dame mi dieta de hoy' },
-  { label: 'Mi rutina',        icon: <IconDumbbell />, msg: 'quiero ver mi rutina de ejercicios' },
-  { label: 'Mi perfil',        icon: <IconUser />,     msg: 'quiero ver mis datos' },
-  { label: 'Calorías hoy',     icon: <IconFlame />,    msg: '¿cuántas calorías llevo hoy?' },
-  { label: 'Actualizar peso',  icon: <IconScale />,    msg: 'quiero actualizar mi peso' },
+  { label: '🏋️ Mi rutina hoy',  msg: 'dame mi rutina de hoy' },
+  { label: '🥗 Mi dieta',        msg: 'dame mi dieta de esta semana' },
+  { label: '🔀 Elegir split',    msg: 'quiero elegir mi split de entrenamiento' },
+  { label: '🔥 Calorías hoy',    msg: '¿cuántas calorías llevo hoy?' },
+  { label: '👤 Mi perfil',       msg: 'quiero ver mis datos' },
+  { label: '⚖️ Actualizar peso', msg: 'quiero actualizar mi peso' },
 ];
 
 // ─── Mensaje de bienvenida ─────────────────────────────────────────────────
 const WELCOME = {
-  text: '¡Hola! 👋 Soy tu asistente NutriLife. Puedo ayudarte con tu dieta, rutina de ejercicios y seguimiento de progreso. Usa los accesos rápidos de arriba o escríbeme directamente.',
+  text: '¡Hola! 👋 Soy tu asistente NutriLife. Puedo darte tu rutina del día, tu plan de dieta semanal, ayudarte a elegir tu split de entrenamiento o responder cualquier duda. ¿En qué te ayudo?',
   sender: 'bot',
-  type: 'text',
+  tipo: 'text',
+};
+
+// ─── Componente: Tarjeta de Rutina ─────────────────────────────────────────
+const TarjetaRutina = ({ data }) => {
+  if (!data) return null;
+
+  if (data.es_descanso) {
+    return (
+      <div className="nl-card-rutina">
+        <div className="nl-rutina-header">
+          <span className="nl-rutina-badge">{data.tipo_split}</span>
+          <span className="nl-rutina-title">Día {data.dia_del_mes} — {data.dia_nombre}</span>
+          <span className="nl-rutina-dia">Semana {data.semana}</span>
+        </div>
+        <div className="nl-descanso">
+          <div className="nl-descanso-icon">😴</div>
+          <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>Día de Descanso</div>
+          <div>Hoy toca recuperación. Descansa, hidrátate y duerme bien. 💧</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="nl-card-rutina">
+      <div className="nl-rutina-header">
+        <span className="nl-rutina-badge">{data.tipo_split}</span>
+        <span className="nl-rutina-title">Día {data.dia_del_mes} — {data.dia_nombre}</span>
+        <span className="nl-rutina-dia">Semana {data.semana}</span>
+      </div>
+
+      {(data.ejercicios || []).map((ej, i) => (
+        <div className="nl-ejercicio-row" key={i}>
+          <div className="nl-ej-num">{i + 1}</div>
+          <div className="nl-ej-info">
+            <div className="nl-ej-nombre">{ej.nombre}</div>
+            <div className="nl-ej-musculo">{ej.musculo}</div>
+          </div>
+          <div className="nl-ej-pills">
+            <span className="nl-pill grey">{ej.series} series</span>
+            <span className="nl-pill">{ej.repeticiones} reps</span>
+          </div>
+        </div>
+      ))}
+
+      <div className="nl-rutina-footer">
+        ⏱ Descanso de <strong style={{ color: '#d97706', margin: '0 2px' }}>60–90 seg</strong> entre series
+      </div>
+    </div>
+  );
+};
+
+// ─── Componente: Tarjeta de Dieta ──────────────────────────────────────────
+const TarjetaDieta = ({ data, onCambiarComida }) => {
+  if (!data) return null;
+
+  const { dieta = {}, calorias_objetivo, fenotipo, ajuste_fenotipo } = data;
+
+  // Calcular macros aproximados (30% prot, 45% carb, 25% grasa del total)
+  const kcalTotal = calorias_objetivo || 2000;
+  const prot = Math.round((kcalTotal * 0.30) / 4);
+  const carb = Math.round((kcalTotal * 0.45) / 4);
+  const fat  = Math.round((kcalTotal * 0.25) / 9);
+
+  const ICONOS = { Desayuno: '🌅', Comida: '☀️', Cena: '🌙', Snack: '🍎' };
+  const momentos = ['Desayuno', 'Comida', 'Cena', 'Snack'].filter(m => dieta[m]);
+
+  const ajusteStr = ajuste_fenotipo > 0
+    ? `+${ajuste_fenotipo} kcal`
+    : ajuste_fenotipo < 0
+    ? `${ajuste_fenotipo} kcal`
+    : '±0 kcal';
+
+  return (
+    <div className="nl-card-dieta">
+      <div className="nl-dieta-header">
+        <div className="nl-dieta-title">🥗 Plan nutricional</div>
+        <div className="nl-dieta-kcal-wrap">
+          <div className="nl-dieta-kcal">{kcalTotal.toLocaleString()}</div>
+          <div className="nl-dieta-kcal-label">kcal · objetivo diario</div>
+        </div>
+      </div>
+
+      <div className="nl-macros-row">
+        <div className="nl-macro-cell">
+          <div className="nl-macro-val prot">{prot}g</div>
+          <div className="nl-macro-lbl">Proteína</div>
+        </div>
+        <div className="nl-macro-cell">
+          <div className="nl-macro-val carb">{carb}g</div>
+          <div className="nl-macro-lbl">Carbos</div>
+        </div>
+        <div className="nl-macro-cell">
+          <div className="nl-macro-val fat">{fat}g</div>
+          <div className="nl-macro-lbl">Grasas</div>
+        </div>
+      </div>
+
+      {momentos.map((momento) => {
+        const comida = dieta[momento];
+        return (
+          <div className="nl-comida-row" key={momento}>
+            <div className="nl-comida-icon">{ICONOS[momento] || '🍽️'}</div>
+            <div className="nl-comida-info">
+              <div className="nl-comida-tiempo">{momento} · {comida.hora || ''}</div>
+              <div className="nl-comida-nombre">{comida.nombre || momento}</div>
+              <div className="nl-comida-desc">{comida.descripcion || ''}</div>
+              {comida._override && (
+                <div className="nl-comida-override">✏️ Cambiado para hoy</div>
+              )}
+              {onCambiarComida && (
+                <button
+                  onClick={() => onCambiarComida(momento)}
+                  style={{
+                    background: 'none', border: 'none', padding: 0,
+                    fontSize: 11, color: '#9ca3af', cursor: 'pointer',
+                    textDecoration: 'underline', marginTop: 2
+                  }}
+                >
+                  cambiar este día
+                </button>
+              )}
+            </div>
+            <span className="nl-comida-kcal">{comida.kcal} kcal</span>
+          </div>
+        );
+      })}
+
+      <div className="nl-dieta-footer">
+        <span>Fenotipo:</span>
+        <span className="nl-fenotipo-tag">{fenotipo || 'mesomorfo'}</span>
+        <span className={ajuste_fenotipo >= 0 ? 'nl-ajuste-pos' : 'nl-ajuste-neg'}>
+          {ajusteStr}
+        </span>
+        <span style={{ marginLeft: 'auto', fontSize: 10 }}>Se repite toda la semana</span>
+      </div>
+    </div>
+  );
+};
+
+// ─── Componente: Selector de Split ─────────────────────────────────────────
+const SelectorSplit = ({ onElegir }) => {
+  const splits = [
+    { key: 'PPL',          nombre: 'Push / Pull / Legs',  dias: '6 días/semana · 2x por grupo', tag: 'pop', tagLabel: 'Popular' },
+    { key: 'Arnold',       nombre: 'Arnold Split',         dias: '6 días/semana · Antagonistas', tag: 'clas', tagLabel: 'Clásico' },
+    { key: 'Upper/Lower',  nombre: 'Upper / Lower',        dias: '4 días/semana · Alta frecuencia', tag: 'sci', tagLabel: 'Científico' },
+    { key: 'Bro Split',    nombre: 'Bro Split',            dias: '5 días/semana · 1 músculo/día', tag: 'clas', tagLabel: 'Clásico' },
+    { key: 'Full Body',    nombre: 'Full Body',            dias: '3 días/semana · Principiantes', tag: 'sci', tagLabel: 'Efectivo' },
+  ];
+
+  return (
+    <div className="nl-card-split">
+      <div className="nl-split-header">
+        <div className="nl-split-header-title">🏋️ Elige tu división de entrenamiento</div>
+        <div className="nl-split-header-sub">Tu rutina mensual (28 días) se generará según tu elección</div>
+      </div>
+      {splits.map((s, i) => (
+        <div className="nl-split-opt" key={s.key} onClick={() => onElegir(s.key)}>
+          <div className="nl-split-num">{i + 1}</div>
+          <div className="nl-split-info">
+            <div className="nl-split-nombre">{s.nombre}</div>
+            <div className="nl-split-dias">{s.dias}</div>
+          </div>
+          <span className={`nl-split-tag ${s.tag}`}>{s.tagLabel}</span>
+        </div>
+      ))}
+    </div>
+  );
 };
 
 // ─── Componente principal ──────────────────────────────────────────────────
 const Asistente = () => {
   const [messages, setMessages] = useState(() => {
     try {
-      const saved = localStorage.getItem('nutrilife_messages');
+      const saved = localStorage.getItem('nutrilife_messages_v2');
       return saved ? JSON.parse(saved) : [WELCOME];
     } catch { return [WELCOME]; }
   });
 
   const [historial, setHistorial] = useState(() => {
     try {
-      const saved = localStorage.getItem('nutrilife_historial');
+      const saved = localStorage.getItem('nutrilife_historial_v2');
       return saved ? JSON.parse(saved) : [];
     } catch { return []; }
   });
@@ -248,8 +532,8 @@ const Asistente = () => {
   const [input, setInput]     = useState('');
   const [loading, setLoading] = useState(false);
 
-  const bottomRef  = useRef(null);
-  const inputRef   = useRef(null);
+  const bottomRef   = useRef(null);
+  const inputRef    = useRef(null);
   const stylesAdded = useRef(false);
 
   // Inyectar estilos una sola vez
@@ -263,11 +547,11 @@ const Asistente = () => {
 
   // Persistir en localStorage
   useEffect(() => {
-    try { localStorage.setItem('nutrilife_messages', JSON.stringify(messages)); } catch {}
+    try { localStorage.setItem('nutrilife_messages_v2', JSON.stringify(messages)); } catch {}
   }, [messages]);
 
   useEffect(() => {
-    try { localStorage.setItem('nutrilife_historial', JSON.stringify(historial)); } catch {}
+    try { localStorage.setItem('nutrilife_historial_v2', JSON.stringify(historial)); } catch {}
   }, [historial]);
 
   // Auto-scroll
@@ -285,7 +569,7 @@ const Asistente = () => {
 
     const userId = localStorage.getItem('userId');
 
-    setMessages(prev => [...prev, { text: msg, sender: 'user', type: 'text' }]);
+    setMessages(prev => [...prev, { text: msg, sender: 'user', tipo: 'text' }]);
     setInput('');
     if (inputRef.current) { inputRef.current.style.height = 'auto'; }
     setLoading(true);
@@ -298,11 +582,16 @@ const Asistente = () => {
         historial,
       });
 
-      const reply = res.data?.reply || 'Sin respuesta del servidor.';
+      const { reply, tipo, data } = res.data;
 
-      // Detectar si la respuesta contiene datos estructurados de dieta o rutina
-      const msgObj = parsearRespuesta(reply);
-      setMessages(prev => [...prev, msgObj]);
+      // Agregar mensaje del bot con tipo + datos estructurados si los hay
+      setMessages(prev => [...prev, {
+        text:   reply,
+        sender: 'bot',
+        tipo:   tipo || 'text',
+        data:   data || null,
+      }]);
+
       setHistorial(prev => [
         ...prev,
         { role: 'user',  parts: [{ text: msg }] },
@@ -311,7 +600,7 @@ const Asistente = () => {
     } catch {
       setMessages(prev => [...prev, {
         text: 'No pude conectarme al servidor. Intenta de nuevo.',
-        sender: 'bot', type: 'text',
+        sender: 'bot', tipo: 'text',
       }]);
     } finally {
       setLoading(false);
@@ -319,29 +608,20 @@ const Asistente = () => {
     }
   };
 
-  // ── Parsear respuesta para detectar tarjetas ────────────────────────────
-  const parsearRespuesta = (reply) => {
-    const lower = reply.toLowerCase();
+  // ── Cambiar comida: inyecta mensaje directo ─────────────────────────────
+  const handleCambiarComida = (momento) => {
+    sendMessage(`Quiero cambiar mi ${momento.toLowerCase()} de hoy`);
+  };
 
-    // Detectar respuesta de dieta (tiene macros y comidas)
-    const esDieta = (lower.includes('desayuno') || lower.includes('comida') || lower.includes('cena'))
-      && (lower.includes('kcal') || lower.includes('calorías') || lower.includes('proteína'));
-
-    // Detectar respuesta de ejercicios
-    const esRutina = (lower.includes('series') || lower.includes('repeticiones'))
-      && (lower.includes('grupo muscular') || lower.includes('ejercicio') || lower.includes('rutina'));
-
-    if (esDieta || esRutina) {
-      return { text: reply, sender: 'bot', type: esDieta ? 'diet' : 'exercise' };
-    }
-
-    return { text: reply, sender: 'bot', type: 'text' };
+  // ── Elegir split desde la tarjeta ──────────────────────────────────────
+  const handleElegirSplit = (split) => {
+    sendMessage(`Quiero el split: ${split}`);
   };
 
   // ── Limpiar conversación ────────────────────────────────────────────────
   const limpiarChat = () => {
-    localStorage.removeItem('nutrilife_messages');
-    localStorage.removeItem('nutrilife_historial');
+    localStorage.removeItem('nutrilife_messages_v2');
+    localStorage.removeItem('nutrilife_historial_v2');
     setMessages([{ ...WELCOME, text: '¡Conversación nueva! ¿En qué te ayudo hoy? 🍏' }]);
     setHistorial([]);
     inputRef.current?.focus();
@@ -360,53 +640,108 @@ const Asistente = () => {
 
   // ── Formatear texto markdown básico ────────────────────────────────────
   const formatText = (text) => {
+    if (!text) return '';
     return text
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/\n/g, '<br/>');
   };
 
-  // ── Renderizar burbuja según tipo ───────────────────────────────────────
+  // ── Renderizar mensaje según tipo ───────────────────────────────────────
   const renderMessage = (msg, idx) => {
     if (msg.sender === 'user') {
       return (
         <div key={idx} className="nl-row nl-user">
           <div className="nl-bubble nl-user">{msg.text}</div>
+          <div className="nl-msg-avatar" style={{ background: '#e5e7eb', color: '#6b7280', fontSize: 14 }}>👤</div>
         </div>
       );
     }
 
-    // Tarjeta de dieta o ejercicios — header verde + contenido estructurado
-    if (msg.type === 'diet' || msg.type === 'exercise') {
-      const esDieta = msg.type === 'diet';
+    const tipo = msg.tipo || 'text';
+
+    // ── Tarjeta de rutina ──
+    if (tipo === 'rutina' && msg.data) {
       return (
         <div key={idx} className="nl-row">
-          <div className="nl-msg-avatar"><IconHeart /></div>
-          <div className="nl-card">
-            <div className="nl-card-header">
-              {esDieta ? <IconSalad /> : <IconDumbbell />}
-              {esDieta ? 'Plan de alimentación del día' : 'Rutina de ejercicios'}
-            </div>
-            <div className="nl-card-body">
-              <p style={{ fontSize: 13, lineHeight: 1.65, color: '#374151', whiteSpace: 'pre-wrap' }}
+          <div className="nl-msg-avatar">🍏</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {msg.text && (
+              <div className="nl-bubble nl-bot"
                 dangerouslySetInnerHTML={{ __html: formatText(msg.text) }} />
-            </div>
+            )}
+            <TarjetaRutina data={msg.data} />
           </div>
         </div>
       );
     }
 
-    // Burbuja de texto normal
+    // ── Tarjeta de dieta ──
+    if (tipo === 'dieta' && msg.data) {
+      return (
+        <div key={idx} className="nl-row">
+          <div className="nl-msg-avatar">🍏</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {msg.text && (
+              <div className="nl-bubble nl-bot"
+                dangerouslySetInnerHTML={{ __html: formatText(msg.text) }} />
+            )}
+            <TarjetaDieta data={msg.data} onCambiarComida={handleCambiarComida} />
+          </div>
+        </div>
+      );
+    }
+
+    // ── Selector de split (cuando el bot pide al usuario elegir) ──
+    if (tipo === 'pedir_split' || (msg.data?.pedir_split)) {
+      return (
+        <div key={idx} className="nl-row">
+          <div className="nl-msg-avatar">🍏</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {msg.text && (
+              <div className="nl-bubble nl-bot"
+                dangerouslySetInnerHTML={{ __html: formatText(msg.text) }} />
+            )}
+            <SelectorSplit onElegir={handleElegirSplit} />
+          </div>
+        </div>
+      );
+    }
+
+    // ── Confirmación de split generado ──
+    if (tipo === 'split_confirmado' && msg.data) {
+      const d = msg.data;
+      return (
+        <div key={idx} className="nl-row">
+          <div className="nl-msg-avatar">🍏</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="nl-bubble nl-bot"
+              dangerouslySetInnerHTML={{ __html: formatText(msg.text) }} />
+            {d.preview_dia1?.ejercicios?.length > 0 && (
+              <TarjetaRutina data={{
+                tipo_split:  d.tipo_split,
+                dia_del_mes: 1,
+                semana:      1,
+                dia_nombre:  d.preview_dia1.nombre,
+                ejercicios:  d.preview_dia1.ejercicios,
+                es_descanso: false,
+              }} />
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ── Burbuja de texto normal ──
     return (
       <div key={idx} className="nl-row">
-        <div className="nl-msg-avatar"><IconHeart /></div>
+        <div className="nl-msg-avatar">🍏</div>
         <div className="nl-bubble nl-bot"
           dangerouslySetInnerHTML={{ __html: formatText(msg.text) }} />
       </div>
     );
   };
 
-  // ── Hora actual ─────────────────────────────────────────────────────────
   const hora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 
   return (
@@ -415,7 +750,7 @@ const Asistente = () => {
       {/* ── HEADER ── */}
       <div className="nl-header">
         <div className="nl-header-left">
-          <div className="nl-avatar"><IconHeart /></div>
+          <div className="nl-avatar">🍏</div>
           <div>
             <div className="nl-header-title">Asistente NutriLife</div>
             <div className="nl-header-sub">
@@ -425,8 +760,7 @@ const Asistente = () => {
           </div>
         </div>
         <button className="nl-clear-btn" onClick={limpiarChat} title="Nueva conversación">
-          <IconTrash />
-          Nueva sesión
+          🗑️ Nueva sesión
         </button>
       </div>
 
@@ -439,7 +773,6 @@ const Asistente = () => {
             onClick={() => sendMessage(chip.msg)}
             disabled={loading}
           >
-            {chip.icon}
             {chip.label}
           </button>
         ))}
@@ -453,7 +786,7 @@ const Asistente = () => {
 
         {loading && (
           <div className="nl-row">
-            <div className="nl-msg-avatar"><IconHeart /></div>
+            <div className="nl-msg-avatar">🍏</div>
             <div className="nl-typing">
               <div className="nl-typing-dot" />
               <div className="nl-typing-dot" />
@@ -483,7 +816,7 @@ const Asistente = () => {
           disabled={loading || !input.trim()}
           aria-label="Enviar mensaje"
         >
-          <IconSend />
+          ➤
         </button>
       </div>
 

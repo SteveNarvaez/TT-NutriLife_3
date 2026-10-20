@@ -176,38 +176,38 @@ function CalendarioRacha({ fechasEntrenadas }) {
 
 // ─── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────
 const MisGraficas = ({ userId }) => {
-  const [macros,       setMacros]       = useState({ proteina: 0, carbohidratos: 0, grasas: 0, calorias: 0 });
-  const [stats,        setStats]        = useState({ peso: 0, meta_calorica: 0, entrenamientos_mes: 0, racha_dias: 0 });
-  const [racha,        setRacha]        = useState([]);
-  const [cargando,     setCargando]     = useState(true);
+  const [macros,     setMacros]     = useState({ proteina: 0, carbohidratos: 0, grasas: 0, calorias: 0 });
+  const [stats,      setStats]      = useState({ peso: 0, meta_calorica: 0, entrenamientos_mes: 0, racha_dias: 0 });
+  const [racha,      setRacha]      = useState([]);
+  const [rachaDias,  setRachaDias]  = useState(0);
+  const [cargando,   setCargando]   = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
+  const cargar = async (esRefresh = false) => {
     const id = userId || localStorage.getItem('userId') || '1';
+    if (esRefresh) setRefreshing(true);
+    try {
+      const [resMacros, resStats, resRacha] = await Promise.all([
+        fetch(`http://localhost:3000/api/graficas/macros/${id}`),
+        fetch(`http://localhost:3000/api/graficas/stats/${id}`),
+        fetch(`http://localhost:3000/api/graficas/racha/${id}`),
+      ]);
+      const [dataMacros, dataStats, dataRacha] = await Promise.all([
+        resMacros.json(), resStats.json(), resRacha.json()
+      ]);
+      setMacros(dataMacros);
+      setStats(dataStats);
+      setRacha(dataRacha.fechas || []);
+      setRachaDias(dataRacha.racha_consecutiva || 0);
+    } catch (err) {
+      console.error('Error cargando gráficas:', err);
+    } finally {
+      setCargando(false);
+      setRefreshing(false);
+    }
+  };
 
-    const cargar = async () => {
-      try {
-        const [resMacros, resStats, resRacha] = await Promise.all([
-          fetch(`http://localhost:3000/api/graficas/macros/${id}`),
-          fetch(`http://localhost:3000/api/graficas/stats/${id}`),
-          fetch(`http://localhost:3000/api/graficas/racha/${id}`),
-        ]);
-
-        const [dataMacros, dataStats, dataRacha] = await Promise.all([
-          resMacros.json(), resStats.json(), resRacha.json()
-        ]);
-
-        setMacros(dataMacros);
-        setStats(dataStats);
-        setRacha(dataRacha.fechas || []);
-      } catch (err) {
-        console.error('Error cargando gráficas:', err);
-      } finally {
-        setCargando(false);
-      }
-    };
-
-    cargar();
-  }, [userId]);
+  useEffect(() => { cargar(); }, [userId]);
 
   if (cargando) {
     return (
@@ -228,6 +228,33 @@ const MisGraficas = ({ userId }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 32 }}>
 
+      {/* ── HEADER CON BOTÓN REFRESH ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: '#14532d', margin: 0 }}>Mis Gráficas</h2>
+          <p style={{ fontSize: 13, color: '#9ca3af', margin: '2px 0 0' }}>Estadísticas de hoy</p>
+        </div>
+        <button
+          onClick={() => cargar(true)}
+          disabled={refreshing}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '8px 14px', borderRadius: 10, border: '1px solid #d1fae5',
+            background: refreshing ? '#f9fafb' : '#f0fdf4',
+            color: '#16a34a', fontSize: 13, fontWeight: 500,
+            cursor: refreshing ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s',
+          }}
+        >
+          <span style={{
+            display: 'inline-block',
+            animation: refreshing ? 'spin 0.8s linear infinite' : 'none',
+          }}>🔄</span>
+          {refreshing ? 'Actualizando…' : 'Actualizar'}
+        </button>
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
       {/* ── TARJETAS RESUMEN ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
         <StatCard
@@ -237,9 +264,9 @@ const MisGraficas = ({ userId }) => {
         />
         <StatCard
           label="Racha actual"
-          valor={`${stats.racha_dias} días`}
-          sub={stats.racha_dias >= 3 ? '🔥 ¡Sigue así!' : 'Entrena hoy'}
-          subColor={stats.racha_dias >= 3 ? '#16a34a' : '#9ca3af'}
+          valor={`${rachaDias} días`}
+          sub={rachaDias >= 3 ? '🔥 ¡Sigue así!' : rachaDias > 0 ? '¡Continúa mañana!' : 'Entrena hoy'}
+          subColor={rachaDias >= 3 ? '#16a34a' : '#9ca3af'}
         />
         <StatCard
           label="Calorías hoy"

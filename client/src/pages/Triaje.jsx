@@ -1,5 +1,100 @@
 import React, { useState } from 'react';
+// ─── SVGs de somatotipos ───────────────────────────────────────────────────
+const SvgEctomorfo = () => (
+  <svg viewBox="0 0 80 160" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="18" rx="11" ry="13" fill="#FBBF24" stroke="#D97706" strokeWidth="1.5"/>
+    <rect x="35" y="29" width="10" height="9" rx="3" fill="#FBBF24"/>
+    <path d="M26 38 Q40 36 54 38 L51 85 Q40 83 29 85 Z" fill="#34D399" stroke="#059669" strokeWidth="1.2"/>
+    <ellipse cx="23" cy="42" rx="6" ry="4" fill="#34D399"/>
+    <ellipse cx="57" cy="42" rx="6" ry="4" fill="#34D399"/>
+    <path d="M17 42 Q12 60 14 78" stroke="#FBBF24" strokeWidth="7" strokeLinecap="round"/>
+    <path d="M63 42 Q68 60 66 78" stroke="#FBBF24" strokeWidth="7" strokeLinecap="round"/>
+    <ellipse cx="14" cy="81" rx="5" ry="4" fill="#FBBF24"/>
+    <ellipse cx="66" cy="81" rx="5" ry="4" fill="#FBBF24"/>
+    <path d="M29 83 Q40 81 51 83 L54 105 Q40 103 26 105 Z" fill="#6EE7B7" stroke="#059669" strokeWidth="1"/>
+    <path d="M30 105 Q27 130 28 152" stroke="#FBBF24" strokeWidth="9" strokeLinecap="round"/>
+    <path d="M50 105 Q53 130 52 152" stroke="#FBBF24" strokeWidth="9" strokeLinecap="round"/>
+    <ellipse cx="28" cy="154" rx="8" ry="4" fill="#FBBF24"/>
+    <ellipse cx="52" cy="154" rx="8" ry="4" fill="#FBBF24"/>
+  </svg>
+);
 
+const SvgMesomorfo = () => (
+  <svg viewBox="0 0 80 160" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="17" rx="13" ry="14" fill="#FBBF24" stroke="#D97706" strokeWidth="1.5"/>
+    <rect x="33" y="29" width="14" height="9" rx="3" fill="#FBBF24"/>
+    <path d="M18 38 Q40 34 62 38 L56 85 Q40 82 24 85 Z" fill="#60A5FA" stroke="#2563EB" strokeWidth="1.2"/>
+    <ellipse cx="14" cy="41" rx="8" ry="5" fill="#60A5FA"/>
+    <ellipse cx="66" cy="41" rx="8" ry="5" fill="#60A5FA"/>
+    <path d="M8 41 Q4 58 7 76" stroke="#FBBF24" strokeWidth="11" strokeLinecap="round"/>
+    <path d="M72 41 Q76 58 73 76" stroke="#FBBF24" strokeWidth="11" strokeLinecap="round"/>
+    <ellipse cx="7" cy="79" rx="6" ry="5" fill="#FBBF24"/>
+    <ellipse cx="73" cy="79" rx="6" ry="5" fill="#FBBF24"/>
+    <path d="M24 83 Q40 80 56 83 L59 105 Q40 102 21 105 Z" fill="#93C5FD" stroke="#2563EB" strokeWidth="1"/>
+    <path d="M28 105 Q24 130 25 152" stroke="#FBBF24" strokeWidth="13" strokeLinecap="round"/>
+    <path d="M52 105 Q56 130 55 152" stroke="#FBBF24" strokeWidth="13" strokeLinecap="round"/>
+    <ellipse cx="25" cy="154" rx="9" ry="5" fill="#FBBF24"/>
+    <ellipse cx="55" cy="154" rx="9" ry="5" fill="#FBBF24"/>
+  </svg>
+);
+
+const SvgEndomorfo = () => (
+  <svg viewBox="0 0 80 160" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="16" rx="14" ry="14" fill="#FBBF24" stroke="#D97706" strokeWidth="1.5"/>
+    <rect x="32" y="28" width="16" height="8" rx="3" fill="#FBBF24"/>
+    <path d="M14 36 Q40 32 66 36 L68 88 Q40 92 12 88 Z" fill="#F87171" stroke="#DC2626" strokeWidth="1.2"/>
+    <ellipse cx="10" cy="42" rx="7" ry="6" fill="#F87171"/>
+    <ellipse cx="70" cy="42" rx="7" ry="6" fill="#F87171"/>
+    <path d="M6 42 Q2 60 5 78" stroke="#FBBF24" strokeWidth="13" strokeLinecap="round"/>
+    <path d="M74 42 Q78 60 75 78" stroke="#FBBF24" strokeWidth="13" strokeLinecap="round"/>
+    <ellipse cx="5" cy="81" rx="7" ry="5" fill="#FBBF24"/>
+    <ellipse cx="75" cy="81" rx="7" ry="5" fill="#FBBF24"/>
+    <path d="M12 87 Q40 91 68 87 L65 110 Q40 114 15 110 Z" fill="#FCA5A5" stroke="#DC2626" strokeWidth="1"/>
+    <path d="M24 110 Q20 132 22 153" stroke="#FBBF24" strokeWidth="16" strokeLinecap="round"/>
+    <path d="M56 110 Q60 132 58 153" stroke="#FBBF24" strokeWidth="16" strokeLinecap="round"/>
+    <ellipse cx="22" cy="155" rx="10" ry="5" fill="#FBBF24"/>
+    <ellipse cx="58" cy="155" rx="10" ry="5" fill="#FBBF24"/>
+  </svg>
+);
+
+const AgeIcons = {
+  '18-29': (
+    <svg viewBox="0 0 60 80" className="w-full h-full" fill="none">
+      <ellipse cx="30" cy="15" rx="10" ry="11" fill="#FBBF24"/>
+      <path d="M16 28 Q30 24 44 28 L42 58 Q30 56 18 58 Z" fill="#818CF8"/>
+      <path d="M16 56 Q15 68 16 76" stroke="#FBBF24" strokeWidth="8" strokeLinecap="round"/>
+      <path d="M44 56 Q45 68 44 76" stroke="#FBBF24" strokeWidth="8" strokeLinecap="round"/>
+    </svg>
+  ),
+  '30-39': (
+    <svg viewBox="0 0 60 80" className="w-full h-full" fill="none">
+      <ellipse cx="30" cy="15" rx="11" ry="11" fill="#FBBF24"/>
+      <path d="M14 28 Q30 23 46 28 L44 60 Q30 58 16 60 Z" fill="#34D399"/>
+      <path d="M14 58 Q13 70 14 77" stroke="#FBBF24" strokeWidth="9" strokeLinecap="round"/>
+      <path d="M46 58 Q47 70 46 77" stroke="#FBBF24" strokeWidth="9" strokeLinecap="round"/>
+    </svg>
+  ),
+  '40-49': (
+    <svg viewBox="0 0 60 80" className="w-full h-full" fill="none">
+      <ellipse cx="30" cy="15" rx="12" ry="11" fill="#FBBF24"/>
+      <path d="M12 28 Q30 23 48 28 L46 62 Q30 60 14 62 Z" fill="#60A5FA"/>
+      <path d="M14 60 Q13 71 14 77" stroke="#FBBF24" strokeWidth="9" strokeLinecap="round"/>
+      <path d="M46 60 Q47 71 46 77" stroke="#FBBF24" strokeWidth="9" strokeLinecap="round"/>
+      <line x1="50" y1="40" x2="52" y2="77" stroke="#9CA3AF" strokeWidth="3" strokeLinecap="round"/>
+    </svg>
+  ),
+  '50+': (
+    <svg viewBox="0 0 60 80" className="w-full h-full" fill="none">
+      <ellipse cx="30" cy="15" rx="12" ry="11" fill="#D1D5DB"/>
+      <ellipse cx="30" cy="8" rx="12" ry="6" fill="#9CA3AF"/>
+      <path d="M12 28 Q30 24 48 28 L46 63 Q30 61 14 63 Z" fill="#9CA3AF"/>
+      <path d="M14 61 Q13 70 14 77" stroke="#D1D5DB" strokeWidth="9" strokeLinecap="round"/>
+      <path d="M46 61 Q47 70 46 77" stroke="#D1D5DB" strokeWidth="9" strokeLinecap="round"/>
+      <line x1="50" y1="38" x2="53" y2="77" stroke="#6B7280" strokeWidth="3.5" strokeLinecap="round"/>
+      <line x1="47" y1="37" x2="53" y2="37" stroke="#6B7280" strokeWidth="3" strokeLinecap="round"/>
+    </svg>
+  ),
+};
 // ─── Pasos del triaje ──────────────────────────────────────────────────────
 const PASOS = [
   {
@@ -8,6 +103,40 @@ const PASOS = [
     titulo: 'Cuestionario de Aptitud Física',
     descripcion: 'Este cuestionario fue diseñado con la colaboración del Entrenador Personal certificado MARTÍNEZ ESPINOSA CARLOS JOSUÉ para evaluar tu condición de salud antes de iniciar cualquier programa de ejercicio. Responde con honestidad — tus respuestas son confidenciales y solo se usan para personalizar tu plan.',
     icono: '🩺',
+  },
+
+  // ── Rango de edad ──
+  {
+    id: 'rango_edad',
+    tipo: 'imagen-opciones',
+    seccion: 'Perfil Personal',
+    icono: '🎂',
+    pregunta: '¿Cuál es tu rango de edad?',
+    campo: 'rango_edad',
+    columnas: 2,
+    opciones: [
+      { valor: '18-29', etiqueta: '18 ~ 29', desc: 'Joven adulto',  svgKey: '18-29', color: 'from-violet-400 to-purple-500' },
+      { valor: '30-39', etiqueta: '30 ~ 39', desc: 'Adulto joven',  svgKey: '30-39', color: 'from-emerald-400 to-green-500' },
+      { valor: '40-49', etiqueta: '40 ~ 49', desc: 'Adulto medio',  svgKey: '40-49', color: 'from-blue-400 to-cyan-500'    },
+      { valor: '50+',   etiqueta: '50+',     desc: 'Adulto mayor',  svgKey: '50+',   color: 'from-gray-400 to-slate-500'   },
+    ],
+  },
+
+  // ── Fenotipo / somatotipo ──
+  {
+    id: 'fenotipo',
+    tipo: 'imagen-opciones',
+    seccion: 'Perfil Personal',
+    icono: '🧬',
+    pregunta: '¿Con qué tipo de cuerpo te identificas más?',
+    campo: 'fenotipo',
+    columnas: 3,
+    info: 'Tu somatotipo ayuda a personalizar la dieta y rutinas.',
+    opciones: [
+      { valor: 'ectomorfo', etiqueta: 'Ectomorfo', desc: 'Delgado, metabolismo rápido', SvgComponent: SvgEctomorfo, color: 'from-emerald-400 to-teal-500' },
+      { valor: 'mesomorfo', etiqueta: 'Mesomorfo', desc: 'Atlético, musculoso',         SvgComponent: SvgMesomorfo, color: 'from-blue-400 to-indigo-500'  },
+      { valor: 'endomorfo', etiqueta: 'Endomorfo', desc: 'Tendencia a acumular grasa', SvgComponent: SvgEndomorfo, color: 'from-rose-400 to-red-500'     },
+    ],
   },
   {
     id: 'diabetes',
@@ -127,6 +256,8 @@ const PASOS = [
 ];
 
 const INITIAL_DATA = {
+  rango_edad: '',
+  fenotipo: '',
   padece_enfermedad: false,
   enfermedades_declaradas: '',
   apto_alto_impacto: true,
@@ -149,26 +280,28 @@ const calcularApto = (d) =>
   !(d.tiene_cardiopatia || (d.tiene_diabetes && d.tipo_diabetes === 'tipo1'));
 
 const resumenItems = (d) => [
-  { label: 'Diabetes',          valor: d.tiene_diabetes ? `Sí (${d.tipo_diabetes || 'sin especificar'})` : 'No' },
-  { label: 'Hipertensión',      valor: d.tiene_hipertension ? 'Sí' : 'No' },
-  { label: 'Cardiopatía',       valor: d.tiene_cardiopatia ? 'Sí ⚠️' : 'No' },
+  { label: 'Rango de edad',       valor: d.rango_edad || 'No indicado' },
+  { label: 'Somatotipo',          valor: d.fenotipo   || 'No indicado' },
+  { label: 'Diabetes',            valor: d.tiene_diabetes ? `Sí (${d.tipo_diabetes || 'sin especificar'})` : 'No' },
+  { label: 'Hipertensión',        valor: d.tiene_hipertension ? 'Sí' : 'No' },
+  { label: 'Cardiopatía',         valor: d.tiene_cardiopatia ? 'Sí ⚠️' : 'No' },
   { label: 'Asma / Respiratorio', valor: d.tiene_asma ? 'Sí' : 'No' },
-  { label: 'Lesión articular',  valor: d.tiene_lesion_articular ? `Sí (${d.zona_lesion || 'zona no especificada'})` : 'No' },
-  { label: 'Osteoporosis',      valor: d.tiene_osteoporosis ? 'Sí' : 'No' },
-  { label: 'Embarazo / Lactancia', valor: d.embarazada ? 'Sí' : 'No' },
-  { label: 'Medicamentos',      valor: d.medicamentos_activos ? `Sí: ${d.desc_medicamentos || '—'}` : 'No' },
-  { label: 'Dolor crónico',     valor: `${d.nivel_dolor_cronico}/10` },
+  { label: 'Lesión articular',    valor: d.tiene_lesion_articular ? `Sí (${d.zona_lesion || 'zona no especificada'})` : 'No' },
+  { label: 'Osteoporosis',        valor: d.tiene_osteoporosis ? 'Sí' : 'No' },
+  { label: 'Embarazo / Lactancia',valor: d.embarazada ? 'Sí' : 'No' },
+  { label: 'Medicamentos',        valor: d.medicamentos_activos ? `Sí: ${d.desc_medicamentos || '—'}` : 'No' },
+  { label: 'Dolor crónico',       valor: `${d.nivel_dolor_cronico}/10` },
 ];
 
 // ─── Componente ────────────────────────────────────────────────────────────
-const Triaje = () => {
+const Triaje = ({ modoModal = false, onCompletado, onCerrar }) => {
   const [paso, setPaso]   = useState(0);
   const [data, setData]   = useState(INITIAL_DATA);
   const [enviado, setEnviado] = useState(false);
 
   const pasoActual = PASOS[paso];
-  const totalPreguntas = PASOS.filter(p => p.tipo === 'pregunta' || p.tipo === 'escala').length;
-  const preguntasRespondidas = PASOS.slice(0, paso).filter(p => p.tipo === 'pregunta' || p.tipo === 'escala').length;
+  const totalPreguntas = PASOS.filter(p => p.tipo === 'pregunta' || p.tipo === 'escala' || p.tipo === 'imagen-opciones').length;
+  const preguntasRespondidas = PASOS.slice(0, paso).filter(p => p.tipo === 'pregunta' || p.tipo === 'escala' || p.tipo === 'imagen-opciones').length;
   const progreso = Math.round((preguntasRespondidas / totalPreguntas) * 100);
 
   const set = (campo, valor) => setData(prev => ({ ...prev, [campo]: valor }));
@@ -198,19 +331,27 @@ const Triaje = () => {
       apto_alto_impacto: calcularApto(data),
     };
 
-    // Enviar mensaje a la ventana padre (Register.jsx)
+    // Si está en modo modal, llamar callback directo
+    if (modoModal && onCompletado) {
+      onCompletado(payload);
+      return;
+    }
+
+    // Fallback: ventana popup (legacy)
     if (window.opener) {
       window.opener.postMessage({ type: 'TRIAJE_COMPLETADO', payload }, '*');
     }
 
     setEnviado(true);
+
+    setEnviado(true);
   };
 
   // ── Pantalla de éxito ───────────────────────────────────────────────────
-  if (enviado) {
+    if (enviado) {
     const apto = calcularApto(data);
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-6">
+      <div className={`${modoModal ? 'p-6' : 'min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-6'}`}>
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
           <div className="text-6xl mb-4">{apto ? '🎉' : '⚠️'}</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
@@ -227,9 +368,15 @@ const Triaje = () => {
             {apto ? '✅ Apto para alto impacto' : '⚠️ Requiere supervisión médica'}
           </div>
           <p className="text-xs text-gray-400 mt-6">Puedes cerrar esta ventana y continuar el registro.</p>
-          <button onClick={() => window.close()} className="mt-3 text-sm text-green-600 underline">
-            Cerrar ventana
-          </button>
+                    {modoModal ? (
+            <button onClick={onCerrar} className="mt-3 text-sm text-green-600 underline">
+              Cerrar
+            </button>
+          ) : (
+            <button onClick={() => window.close()} className="mt-3 text-sm text-green-600 underline">
+              Cerrar ventana
+            </button>
+          )}
         </div>
       </div>
     );
@@ -271,7 +418,50 @@ const Triaje = () => {
               <p className="text-gray-500 text-sm leading-relaxed">{pasoActual.descripcion}</p>
             </div>
           )}
-
+          {/* PASO: Imagen-opciones (edad y fenotipo) */}
+          {pasoActual.tipo === 'imagen-opciones' && (
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-medium text-green-600 uppercase tracking-wide bg-green-50 px-2 py-0.5 rounded-full">
+                  {pasoActual.seccion}
+                </span>
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 mt-3 mb-1">{pasoActual.icono} {pasoActual.pregunta}</h3>
+              {pasoActual.info && (
+                <p className="text-xs text-gray-400 mb-3 bg-blue-50 px-3 py-2 rounded-lg">ℹ️ {pasoActual.info}</p>
+              )}
+              <div className={`grid gap-3 mt-4 ${pasoActual.columnas === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                {pasoActual.opciones.map(op => {
+                  const sel = data[pasoActual.campo] === op.valor;
+                  return (
+                    <button key={op.valor} type="button" onClick={() => set(pasoActual.campo, op.valor)}
+                      className={`relative flex flex-col items-center rounded-2xl border-2 overflow-hidden transition-all duration-200 ${
+                        sel ? 'border-green-500 shadow-lg scale-[1.03]' : 'border-gray-200 hover:border-green-300 hover:shadow-md'
+                      }`}
+                    >
+                      <div className={`w-full bg-gradient-to-b ${op.color} flex items-end justify-center`}
+                        style={{ height: pasoActual.columnas === 3 ? '110px' : '130px' }}>
+                        <div style={{ width: pasoActual.columnas === 3 ? '60px' : '70px', height: pasoActual.columnas === 3 ? '105px' : '125px' }}>
+                          {op.SvgComponent ? <op.SvgComponent /> : AgeIcons[op.svgKey]}
+                        </div>
+                      </div>
+                      <div className={`w-full py-2 px-1 text-center ${sel ? 'bg-green-50' : 'bg-white'}`}>
+                        <p className={`text-sm font-bold ${sel ? 'text-green-700' : 'text-gray-800'}`}>{op.etiqueta}</p>
+                        {op.desc && <p className="text-[10px] text-gray-400 leading-tight mt-0.5">{op.desc}</p>}
+                      </div>
+                      {sel && (
+                        <div className="absolute top-2 right-2 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow">
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {/* PASO: Pregunta Sí/No */}
           {pasoActual.tipo === 'pregunta' && (
             <div>

@@ -5,8 +5,9 @@ const pool    = require('../config/db');
 
 router.post('/guardar', async (req, res) => {
   try {
-    const {
+        const {
       id_usuario,
+      rango_edad, fenotipo,
       padece_enfermedad, enfermedades_declaradas, apto_alto_impacto,
       tiene_diabetes, tipo_diabetes, tiene_hipertension, tiene_cardiopatia,
       tiene_asma, tiene_lesion_articular, zona_lesion, tiene_osteoporosis,

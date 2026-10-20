@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import Triaje from './Triaje';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -9,23 +10,13 @@ const Register = () => {
     acepto_disclaimer: false,
   });
   const [triajeCompletado, setTriajeCompletado] = useState(false);
+  const [mostrarTriaje, setMostrarTriaje] = useState(false);
   const navigate = useNavigate();
 
-  // Escuchar cuando el triaje se completa (mensaje desde la pestaña del triaje)
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.data?.type === 'TRIAJE_COMPLETADO') {
-        setTriajeCompletado(true);
-        // Guardar datos del triaje temporalmente para enviarlos con el registro
-        sessionStorage.setItem('triaje_data', JSON.stringify(e.data.payload));
-      }
-    };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
-  }, []);
-
-  const abrirTriaje = () => {
-    window.open('/triaje', 'triaje_nutrilife', 'width=700,height=750,scrollbars=yes');
+  const handleTriajeCompletado = (payload) => {
+    sessionStorage.setItem('triaje_data', JSON.stringify(payload));
+    setTriajeCompletado(true);
+    setMostrarTriaje(false);
   };
 
   const handleSubmit = async (e) => {
@@ -35,11 +26,9 @@ const Register = () => {
       return;
     }
     try {
-      // 1. Crear la cuenta
       const res = await axios.post('http://localhost:3000/api/auth/register', formData);
       const { userId } = res.data;
 
-      // 2. Guardar el triaje vinculado al usuario recién creado
       const triajeData = JSON.parse(sessionStorage.getItem('triaje_data') || '{}');
       if (userId && Object.keys(triajeData).length > 0) {
         await axios.post('http://localhost:3000/api/triaje/guardar', {
@@ -60,6 +49,21 @@ const Register = () => {
       }
     }
   };
+
+  // Modal de triaje
+  if (mostrarTriaje) {
+    return (
+      <div className="min-h-screen bg-black/60 flex items-center justify-center p-4 relative">
+        <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl">
+          <Triaje
+            modoModal
+            onCompletado={handleTriajeCompletado}
+            onCerrar={() => setMostrarTriaje(false)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-6">
@@ -109,9 +113,7 @@ const Register = () => {
 
         {/* ── TRIAJE ── */}
         <div className={`mt-6 p-4 rounded-xl border-2 transition-all ${
-          triajeCompletado
-            ? 'bg-green-50 border-green-300'
-            : 'bg-amber-50 border-amber-200'
+          triajeCompletado ? 'bg-green-50 border-green-300' : 'bg-amber-50 border-amber-200'
         }`}>
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -127,7 +129,7 @@ const Register = () => {
             {!triajeCompletado && (
               <button
                 type="button"
-                onClick={abrirTriaje}
+                onClick={() => setMostrarTriaje(true)}
                 className="flex-shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm"
               >
                 Iniciar →
