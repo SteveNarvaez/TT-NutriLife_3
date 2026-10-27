@@ -1,8 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import Triaje from './Triaje';
 
+// ── Pantalla que aparece DESPUÉS del registro exitoso ──
+const PantallaVerificacion = ({ email, onReenviar, reenviando, mensajeReenvio }) => (
+  <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-6">
+    <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg border border-gray-100 text-center">
+      <div className="text-6xl mb-4">📬</div>
+      <h2 className="text-2xl font-extrabold text-gray-800 mb-2">¡Revisa tu correo!</h2>
+      <p className="text-gray-500 mb-1">
+        Enviamos un enlace de verificación a:
+      </p>
+      <p className="text-green-600 font-bold text-lg mb-6 break-all">{email}</p>
+      <p className="text-gray-400 text-sm mb-8">
+        Haz clic en el botón del correo para activar tu cuenta.<br />
+        El enlace expira en <strong>24 horas</strong>.
+      </p>
+
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-left">
+        <p className="text-amber-700 text-sm font-semibold mb-1">⚠️ ¿No llegó el correo?</p>
+        <ul className="text-amber-600 text-xs space-y-1 list-disc list-inside">
+          <li>Revisa tu carpeta de <strong>Spam</strong> o Correo no deseado</li>
+          <li>Puede tardar hasta 2 minutos en llegar</li>
+          <li>Verifica que el correo esté escrito correctamente</li>
+        </ul>
+      </div>
+
+      {mensajeReenvio && (
+        <p className="text-green-600 text-sm font-medium mb-4">{mensajeReenvio}</p>
+      )}
+
+      <button
+        onClick={onReenviar}
+        disabled={reenviando}
+        className="w-full border-2 border-green-500 text-green-600 font-bold p-3 rounded-xl hover:bg-green-50 transition mb-4 disabled:opacity-50"
+      >
+        {reenviando ? 'Enviando...' : '🔁 Reenviar correo de verificación'}
+      </button>
+
+      <Link to="/login" className="text-gray-400 text-sm hover:text-green-600 hover:underline">
+        Ya verifiqué → Iniciar sesión
+      </Link>
+    </div>
+  </div>
+);
+
+// ── Formulario de registro principal ──
 const Register = () => {
   const [formData, setFormData] = useState({
     nombre: '', email: '', password: '',
@@ -10,13 +53,26 @@ const Register = () => {
     acepto_disclaimer: false,
   });
   const [triajeCompletado, setTriajeCompletado] = useState(false);
-  const [mostrarTriaje, setMostrarTriaje] = useState(false);
+  const [registrado, setRegistrado]             = useState(false);
+  const [emailRegistrado, setEmailRegistrado]   = useState('');
+  const [reenviando, setRenviando]              = useState(false);
+  const [mensajeReenvio, setMensajeReenvio]     = useState('');
   const navigate = useNavigate();
 
-  const handleTriajeCompletado = (payload) => {
-    sessionStorage.setItem('triaje_data', JSON.stringify(payload));
-    setTriajeCompletado(true);
-    setMostrarTriaje(false);
+  // Escuchar cuando el triaje se completa
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.data?.type === 'TRIAJE_COMPLETADO') {
+        setTriajeCompletado(true);
+        sessionStorage.setItem('triaje_data', JSON.stringify(e.data.payload));
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  const abrirTriaje = () => {
+    window.open('/triaje', 'triaje_nutrilife', 'width=700,height=750,scrollbars=yes');
   };
 
   const handleSubmit = async (e) => {
@@ -26,9 +82,11 @@ const Register = () => {
       return;
     }
     try {
+      // 1. Crear la cuenta
       const res = await axios.post('http://localhost:3000/api/auth/register', formData);
       const { userId } = res.data;
 
+      // 2. Guardar el triaje vinculado al usuario
       const triajeData = JSON.parse(sessionStorage.getItem('triaje_data') || '{}');
       if (userId && Object.keys(triajeData).length > 0) {
         await axios.post('http://localhost:3000/api/triaje/guardar', {
@@ -38,11 +96,14 @@ const Register = () => {
       }
 
       sessionStorage.removeItem('triaje_data');
-      alert('¡Cuenta creada exitosamente!');
-      navigate('/login');
+
+      // 3. Mostrar pantalla de verificación en lugar de navegar al login
+      setEmailRegistrado(formData.email);
+      setRegistrado(true);
+
     } catch (err) {
       const mensaje = err.response?.data?.error || 'Error de conexión';
-      if (mensaje.includes('usuarios_email_key')) {
+      if (mensaje.includes('usuarios_email_key') || mensaje.includes('ya está registrado')) {
         alert('Este correo ya está registrado. ¡Mejor inicia sesión! 😉');
       } else {
         alert(mensaje);
@@ -50,18 +111,30 @@ const Register = () => {
     }
   };
 
-  // Modal de triaje
-  if (mostrarTriaje) {
+  const handleReenviar = async () => {
+    setRenviando(true);
+    setMensajeReenvio('');
+    try {
+      const res = await axios.post('http://localhost:3000/api/auth/reenviar-verificacion', {
+        email: emailRegistrado,
+      });
+      setMensajeReenvio(res.data.message || 'Correo reenviado. Revisa tu bandeja.');
+    } catch {
+      setMensajeReenvio('Error al reenviar. Intenta de nuevo.');
+    } finally {
+      setRenviando(false);
+    }
+  };
+
+  // Si ya se registró, mostrar pantalla de verificación
+  if (registrado) {
     return (
-      <div className="min-h-screen bg-black/60 flex items-center justify-center p-4 relative">
-        <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl">
-          <Triaje
-            modoModal
-            onCompletado={handleTriajeCompletado}
-            onCerrar={() => setMostrarTriaje(false)}
-          />
-        </div>
-      </div>
+      <PantallaVerificacion
+        email={emailRegistrado}
+        onReenviar={handleReenviar}
+        reenviando={reenviando}
+        mensajeReenvio={mensajeReenvio}
+      />
     );
   }
 
@@ -113,7 +186,9 @@ const Register = () => {
 
         {/* ── TRIAJE ── */}
         <div className={`mt-6 p-4 rounded-xl border-2 transition-all ${
-          triajeCompletado ? 'bg-green-50 border-green-300' : 'bg-amber-50 border-amber-200'
+          triajeCompletado
+            ? 'bg-green-50 border-green-300'
+            : 'bg-amber-50 border-amber-200'
         }`}>
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -129,7 +204,7 @@ const Register = () => {
             {!triajeCompletado && (
               <button
                 type="button"
-                onClick={() => setMostrarTriaje(true)}
+                onClick={abrirTriaje}
                 className="flex-shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm"
               >
                 Iniciar →

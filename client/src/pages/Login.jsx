@@ -1,126 +1,127 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
-export default function Login() {
+const Login = () => {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [showPw, setShowPw]     = useState(false);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState('');
+  const [error, setError]       = useState(null);       // null | { tipo, mensaje, email }
+  const [reenviando, setRenviando]      = useState(false);
+  const [mensajeReenvio, setMensajeReenvio] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    setError(null);
+    setMensajeReenvio('');
     try {
-      const { data } = await axios.post('http://localhost:3000/api/auth/login', { email, password });
+      const response = await axios.post('http://localhost:3000/api/auth/login', { email, password });
 
-      // Guardar datos de sesión
-      localStorage.setItem('userId',   data.userId);
-      localStorage.setItem('userName', data.user.nombre);
-      localStorage.setItem('userRol',  data.user.rol || 'usuario');
-
+      localStorage.setItem('userId',   response.data.userId);
+      localStorage.setItem('userName', response.data.user.nombre);
+      console.log('✅ Login exitoso. ID guardado:', response.data.userId);
       navigate('/dashboard');
+
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al iniciar sesión');
+      const data = err.response?.data;
+      if (data?.error === 'EMAIL_NO_VERIFICADO') {
+        // Email no verificado — mostrar bloque especial con botón de reenvío
+        setError({ tipo: 'no_verificado', mensaje: data.message, email: data.email });
+      } else {
+        setError({ tipo: 'generico', mensaje: data?.error || 'Error al iniciar sesión' });
+      }
+    }
+  };
+
+  const handleReenviar = async () => {
+    setRenviando(true);
+    setMensajeReenvio('');
+    try {
+      const res = await axios.post('http://localhost:3000/api/auth/reenviar-verificacion', {
+        email: error?.email || email,
+      });
+      setMensajeReenvio(res.data.message || 'Correo reenviado. Revisa tu bandeja.');
+    } catch {
+      setMensajeReenvio('Error al reenviar. Intenta de nuevo.');
     } finally {
-      setLoading(false);
+      setRenviando(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+      <div className="bg-white p-10 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 shadow-lg shadow-emerald-500/30 mb-4">
-            <span className="text-3xl">🌿</span>
-          </div>
-          <h1 className="text-3xl font-extrabold text-gray-800 dark:text-white">NutriLife</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Hola de nuevo 👋 Accede a tu cuenta</p>
+          <h2 className="text-3xl font-extrabold text-gray-800">Hola de nuevo 🍏</h2>
+          <p className="text-gray-500 mt-2">Ingresa a tu cuenta de NutriLife</p>
         </div>
 
-        {/* Card */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/30 dark:border-gray-700/50 p-8">
-          {error && (
-            <div className="mb-5 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/50 text-sm text-red-700 dark:text-red-400">
-              ⚠️ {error}
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+            <input
+              type="email"
+              className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-green-400 outline-none transition"
+              placeholder="tu@email.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+            <input
+              type="password"
+              className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-green-400 outline-none transition"
+              placeholder="••••••••"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* ── Mensajes de error ── */}
+          {error?.tipo === 'no_verificado' && (
+            <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
+              <p className="text-amber-700 font-bold text-sm mb-1">📬 Verifica tu correo</p>
+              <p className="text-amber-600 text-xs mb-3">{error.mensaje}</p>
+              {mensajeReenvio ? (
+                <p className="text-green-600 text-xs font-medium">{mensajeReenvio}</p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleReenviar}
+                  disabled={reenviando}
+                  className="text-xs text-amber-700 underline hover:text-amber-900 disabled:opacity-50"
+                >
+                  {reenviando ? 'Enviando...' : '🔁 Reenviar correo de verificación'}
+                </button>
+              )}
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1.5">
-                Correo electrónico
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="tu@email.com"
-                required
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600
-                  bg-white dark:bg-gray-900 text-gray-800 dark:text-white
-                  placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50
-                  transition-shadow duration-150"
-              />
+          {error?.tipo === 'generico' && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+              <p className="text-red-600 text-sm">{error.mensaje}</p>
             </div>
+          )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1.5">
-                Contraseña
-              </label>
-              <div className="relative">
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="w-full px-4 py-3 pr-12 rounded-xl border border-gray-200 dark:border-gray-600
-                    bg-white dark:bg-gray-900 text-gray-800 dark:text-white
-                    placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50
-                    transition-shadow duration-150"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw(p => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                >
-                  {showPw ? '🙈' : '👁'}
-                </button>
-              </div>
-            </div>
+          <button
+            type="submit"
+            className="w-full bg-green-500 text-white py-3 rounded-lg font-bold hover:bg-green-600 transition-colors shadow-lg shadow-green-200"
+          >
+            Entrar ahora
+          </button>
+        </form>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl font-bold text-white
-                bg-gradient-to-r from-emerald-500 to-teal-600
-                hover:from-emerald-600 hover:to-teal-700
-                shadow-lg shadow-emerald-500/30
-                disabled:opacity-60 disabled:cursor-not-allowed
-                transition-all duration-150"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Entrando…
-                </span>
-              ) : 'Entrar ahora →'}
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-            ¿No tienes cuenta?{' '}
-            <Link to="/" className="text-emerald-600 dark:text-emerald-400 font-semibold hover:underline">
-              Regístrate gratis
-            </Link>
-          </p>
-        </div>
+        <p className="mt-8 text-center text-sm text-gray-600">
+          ¿No tienes cuenta?{' '}
+          <Link to="/" className="text-green-600 font-bold hover:underline">Regístrate gratis</Link>
+        </p>
       </div>
     </div>
   );
-}
+};
+
+export default Login;

@@ -125,7 +125,9 @@ const STYLES = `
   .nl-ejercicio-row {
     display: flex; align-items: center; gap: 10px;
     padding: 9px 14px; border-bottom: 1px solid #f5f5f5;
+    cursor: pointer; transition: background 0.15s;
   }
+  .nl-ejercicio-row:hover { background: #f9fafb; }
   .nl-ejercicio-row:last-child { border-bottom: none; }
   .nl-ej-num {
     width: 22px; height: 22px; border-radius: 50%;
@@ -137,6 +139,22 @@ const STYLES = `
   .nl-ej-info { flex: 1; min-width: 0; }
   .nl-ej-nombre { font-size: 12.5px; font-weight: 600; color: #1f2937; }
   .nl-ej-musculo { font-size: 10.5px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
+
+  /* Imagen de ejercicio expandible */
+  .nl-ej-img-wrap {
+    overflow: hidden; max-height: 0; transition: max-height 0.45s ease;
+    background: #0f1f14;
+  }
+  .nl-ej-img-wrap.open { max-height: 420px; }
+  .nl-ej-img-wrap img {
+    width: 100%; height: auto; max-height: 420px;
+    object-fit: contain; display: block;
+  }
+  .nl-ej-img-btn {
+    font-size: 10px; color: #16a34a; margin-left: auto;
+    background: none; border: none; cursor: pointer; padding: 2px 4px;
+    font-weight: 600; flex-shrink: 0;
+  }
   .nl-ej-pills { display: flex; gap: 5px; flex-shrink: 0; }
   .nl-pill {
     font-size: 11px; font-weight: 600;
@@ -347,6 +365,7 @@ const WELCOME = {
 
 // ─── Componente: Tarjeta de Rutina ─────────────────────────────────────────
 const TarjetaRutina = ({ data }) => {
+  const [imgAbierta, setImgAbierta] = React.useState(null);
   if (!data) return null;
 
   if (data.es_descanso) {
@@ -375,21 +394,39 @@ const TarjetaRutina = ({ data }) => {
       </div>
 
       {(data.ejercicios || []).map((ej, i) => (
-        <div className="nl-ejercicio-row" key={i}>
-          <div className="nl-ej-num">{i + 1}</div>
-          <div className="nl-ej-info">
-            <div className="nl-ej-nombre">{ej.nombre}</div>
-            <div className="nl-ej-musculo">{ej.musculo}</div>
+        <div key={i}>
+          <div
+            className="nl-ejercicio-row"
+            onClick={() => ej.img_url && setImgAbierta(imgAbierta === i ? null : i)}
+          >
+            <div className="nl-ej-num">{i + 1}</div>
+            <div className="nl-ej-info">
+              <div className="nl-ej-nombre">{ej.nombre}</div>
+              <div className="nl-ej-musculo">{ej.musculo}</div>
+            </div>
+            <div className="nl-ej-pills">
+              <span className="nl-pill grey">{ej.series} series</span>
+              <span className="nl-pill">{ej.repeticiones} reps</span>
+            </div>
+            {ej.img_url && (
+              <button className="nl-ej-img-btn" onClick={e => { e.stopPropagation(); setImgAbierta(imgAbierta === i ? null : i); }}>
+                {imgAbierta === i ? '▲' : '▼'}
+              </button>
+            )}
           </div>
-          <div className="nl-ej-pills">
-            <span className="nl-pill grey">{ej.series} series</span>
-            <span className="nl-pill">{ej.repeticiones} reps</span>
-          </div>
+          {ej.img_url && (
+            <div className={`nl-ej-img-wrap${imgAbierta === i ? ' open' : ''}`}>
+              <img src={ej.img_url} alt={ej.nombre} loading="lazy" />
+            </div>
+          )}
         </div>
       ))}
 
       <div className="nl-rutina-footer">
         ⏱ Descanso de <strong style={{ color: '#d97706', margin: '0 2px' }}>60–90 seg</strong> entre series
+        {data.ejercicios?.some(e => e.img_url) && (
+          <span style={{ marginLeft: 'auto', fontSize: 10, color: '#16a34a' }}>▼ toca un ejercicio para ver imagen</span>
+        )}
       </div>
     </div>
   );
@@ -755,7 +792,7 @@ const Asistente = () => {
             <div className="nl-header-title">Asistente NutriLife</div>
             <div className="nl-header-sub">
               <span className="nl-dot" />
-              Activo 
+              Activo · NutriLife v2
             </div>
           </div>
         </div>

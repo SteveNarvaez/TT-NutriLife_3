@@ -7,7 +7,7 @@ dotenv.config();
 const authRoutes    = require('./routes/authRoutes');
 const chatbotRoutes = require('./routes/chatbotRoutes');
 const triajeRoutes  = require('./routes/triajeRoutes');
-
+const adminRoutes = require('./routes/adminRoutes');
 const app = express(); // ← PRIMERO se crea app
 
 app.use(cors());
@@ -17,7 +17,7 @@ app.use(express.json());
 app.use('/api/auth',    authRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/triaje',  triajeRoutes);
-
+app.use('/api/admin', adminRoutes);
 // 👇 AQUÍ AGREGAMOS LA NUEVA RUTA PARA LAS GRÁFICAS 👇
 app.get('/api/graficas/peso/:id_usuario', async (req, res) => {
     try {

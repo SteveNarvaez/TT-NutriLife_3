@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Register  from './pages/Register';
-import Login     from './pages/Login';
-import Triaje    from './pages/Triaje';
-import Dashboard from './pages/Dashboard';
+import Register       from './pages/Register';
+import Login          from './pages/Login';
+import Triaje         from './pages/Triaje';
+import Dashboard      from './pages/Dashboard';
+import EmailVerificado from './pages/EmailVerificado';
 
 // ─── Guard: requiere userId en localStorage ─────────────────────
 function RequireAuth({ children }) {
@@ -14,7 +15,7 @@ function RequireAuth({ children }) {
 function RequireAdmin({ children }) {
   const userId  = localStorage.getItem('userId');
   const userRol = localStorage.getItem('userRol');
-  if (!userId)           return <Navigate to="/login"     replace />;
+  if (!userId)             return <Navigate to="/login"     replace />;
   if (userRol !== 'admin') return <Navigate to="/dashboard" replace />;
   return children;
 }
@@ -29,11 +30,14 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Públicas */}
-        <Route path="/"       element={<Register />} />
-        <Route path="/login"  element={<Login    />} />
+        <Route path="/"                element={<Register />} />
+        <Route path="/login"           element={<Login    />} />
+        <Route path="/verificar-email" element={<EmailVerificado />} />
+
+        {/* Triaje: pública — se abre como popup desde el registro sin userId */}
+        <Route path="/triaje" element={<Triaje />} />
 
         {/* Protegidas */}
-        <Route path="/triaje"    element={<RequireAuth><Triaje /></RequireAuth>} />
         <Route path="/dashboard" element={
           <RequireAuth>
             <Dashboard onLogout={handleLogout} />

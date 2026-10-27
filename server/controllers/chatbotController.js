@@ -27,7 +27,7 @@ async function buscarAlimentos({ grupo_nutricional, calorias_max }) {
 
 async function listarCatalogoEjercicios({ id_usuario }) {
   const result = await pool.query(
-    `SELECT nombre, grupo_muscular, dificultad, series_sugeridas, repeticiones_sugeridas, descripcion, objetivo_enfocado
+    `SELECT nombre, grupo_muscular, dificultad, series_sugeridas, repeticiones_sugeridas, descripcion, objetivo_enfocado, img_url
      FROM cat_ejercicios
      ORDER BY grupo_muscular ASC, nombre ASC`
   );
@@ -84,7 +84,7 @@ async function buscarEjercicios({ grupo_muscular, id_usuario }) {
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
   const result = await pool.query(
-    `SELECT nombre, grupo_muscular, series_sugeridas, repeticiones_sugeridas, descripcion, objetivo_enfocado
+    `SELECT nombre, grupo_muscular, series_sugeridas, repeticiones_sugeridas, descripcion, objetivo_enfocado, img_url
      FROM cat_ejercicios ${where} ORDER BY RANDOM() LIMIT $${params.length + 1}`,
     [...params, cantidadEjercicios]
   );
@@ -369,7 +369,7 @@ async function elegirSplit({ id_usuario, tipo_split }) {
 
   // Obtener ejercicios del catálogo
   const catEjercicios = await pool.query(
-    `SELECT nombre, grupo_muscular, series_sugeridas, repeticiones_sugeridas, descripcion
+    `SELECT nombre, grupo_muscular, series_sugeridas, repeticiones_sugeridas, descripcion, img_url
      FROM cat_ejercicios ORDER BY grupo_muscular, nombre`
   );
 
@@ -407,7 +407,8 @@ async function elegirSplit({ id_usuario, tipo_split }) {
           musculo:     ej.grupo_muscular,
           series:      ej.series_sugeridas || 3,
           repeticiones: repsTarget,
-          descripcion: ej.descripcion || ''
+          descripcion: ej.descripcion || '',
+          img_url:     ej.img_url || null
         });
       }
     }
@@ -483,6 +484,23 @@ async function obtenerRutinaHoy({ id_usuario }) {
   const tipoSplit   = rutinaQ.rows[0].tipo_split;
   const fenotipo    = rutinaQ.rows[0].fenotipo;
 
+  // Enriquecer ejercicios con img_url desde catálogo (por si la rutina fue
+  // generada antes de agregar la columna)
+  let ejerciciosEnriquecidos = diaHoy?.ejercicios || [];
+  if (ejerciciosEnriquecidos.length > 0) {
+    const nombres = ejerciciosEnriquecidos.map(e => e.nombre);
+    const imgQ = await pool.query(
+      `SELECT nombre, img_url FROM cat_ejercicios WHERE nombre = ANY($1)`,
+      [nombres]
+    );
+    const imgMap = {};
+    for (const row of imgQ.rows) imgMap[row.nombre] = row.img_url;
+    ejerciciosEnriquecidos = ejerciciosEnriquecidos.map(e => ({
+      ...e,
+      img_url: e.img_url || imgMap[e.nombre] || null
+    }));
+  }
+
   return {
     __tipo: 'rutina',
     tipo_split: tipoSplit,
@@ -490,7 +508,7 @@ async function obtenerRutinaHoy({ id_usuario }) {
     dia_del_mes: diaRutina,
     semana: Math.ceil(diaRutina / 7),
     dia_nombre: diaHoy?.nombre || 'Descanso',
-    ejercicios: diaHoy?.ejercicios || [],
+    ejercicios: ejerciciosEnriquecidos,
     es_descanso: !diaHoy?.ejercicios?.length
   };
 }
