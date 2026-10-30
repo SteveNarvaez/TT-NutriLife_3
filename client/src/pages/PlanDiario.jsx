@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const API = 'http://localhost:3000/api';
+const API = `${import.meta.env.VITE_API_URL}/api`;
 
 const PlanDiario = ({ userId }) => {
   const uid = userId || localStorage.getItem('userId') || '1';

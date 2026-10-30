@@ -7,17 +7,25 @@ dotenv.config();
 const authRoutes    = require('./routes/authRoutes');
 const chatbotRoutes = require('./routes/chatbotRoutes');
 const triajeRoutes  = require('./routes/triajeRoutes');
-const adminRoutes = require('./routes/adminRoutes');
+const adminRoutes   = require('./routes/adminRoutes');
+
 const app = express(); // ← PRIMERO se crea app
 
-app.use(cors());
+// CORS: en producción solo permite el dominio de Netlify (FRONTEND_URL);
+// en desarrollo permite localhost:5173.
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true,
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // LUEGO se registran las rutas
 app.use('/api/auth',    authRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/triaje',  triajeRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin',   adminRoutes);
+
 // 👇 AQUÍ AGREGAMOS LA NUEVA RUTA PARA LAS GRÁFICAS 👇
 app.get('/api/graficas/peso/:id_usuario', async (req, res) => {
     try {

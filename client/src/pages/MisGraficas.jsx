@@ -188,9 +188,9 @@ const MisGraficas = ({ userId }) => {
     if (esRefresh) setRefreshing(true);
     try {
       const [resMacros, resStats, resRacha] = await Promise.all([
-        fetch(`http://localhost:3000/api/graficas/macros/${id}`),
-        fetch(`http://localhost:3000/api/graficas/stats/${id}`),
-        fetch(`http://localhost:3000/api/graficas/racha/${id}`),
+        fetch(`${import.meta.env.VITE_API_URL}/api/graficas/macros/${id}`),
+        fetch(`${import.meta.env.VITE_API_URL}/api/graficas/stats/${id}`),
+        fetch(`${import.meta.env.VITE_API_URL}/api/graficas/racha/${id}`),
       ]);
       const [dataMacros, dataStats, dataRacha] = await Promise.all([
         resMacros.json(), resStats.json(), resRacha.json()

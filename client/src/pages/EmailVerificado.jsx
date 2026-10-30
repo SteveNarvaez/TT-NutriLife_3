@@ -17,7 +17,7 @@ const EmailVerificado = () => {
     }
 
     axios
-      .get(`http://localhost:3000/api/auth/verificar-email?token=${token}`)
+      .get(`${import.meta.env.VITE_API_URL}/api/auth/verificar-email?token=${token}`)
       .then((res) => {
         setEstado('ok');
         setNombre(res.data.nombre || '');

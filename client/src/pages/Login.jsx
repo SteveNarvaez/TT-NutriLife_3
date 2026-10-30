@@ -15,7 +15,7 @@ const Login = () => {
     setError(null);
     setMensajeReenvio('');
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/login', { email, password });
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/login`, { email, password });
 
       localStorage.setItem('userId',   response.data.userId);
       localStorage.setItem('userName', response.data.user.nombre);
@@ -37,7 +37,7 @@ const Login = () => {
     setRenviando(true);
     setMensajeReenvio('');
     try {
-      const res = await axios.post('http://localhost:3000/api/auth/reenviar-verificacion', {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/reenviar-verificacion`, {
         email: error?.email || email,
       });
       setMensajeReenvio(res.data.message || 'Correo reenviado. Revisa tu bandeja.');

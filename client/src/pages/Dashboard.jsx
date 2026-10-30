@@ -131,8 +131,8 @@ export default function Dashboard({ onLogout }) {
     try {
       setLoading(true);
       const [statsRes, perfilRes] = await Promise.all([
-        fetch(`http://localhost:3000/api/graficas/stats/${userId}`),
-        fetch(`http://localhost:3000/api/auth/perfil/${userId}`)
+        fetch(`${import.meta.env.VITE_API_URL}/api/graficas/stats/${userId}`),
+        fetch(`${import.meta.env.VITE_API_URL}/api/auth/perfil/${userId}`)
       ]);
       if (statsRes.ok)  setStats(await statsRes.json());
       if (perfilRes.ok) setPerfil(await perfilRes.json());

@@ -83,13 +83,13 @@ const Register = () => {
     }
     try {
       // 1. Crear la cuenta
-      const res = await axios.post('http://localhost:3000/api/auth/register', formData);
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/register`, formData);
       const { userId } = res.data;
 
       // 2. Guardar el triaje vinculado al usuario
       const triajeData = JSON.parse(sessionStorage.getItem('triaje_data') || '{}');
       if (userId && Object.keys(triajeData).length > 0) {
-        await axios.post('http://localhost:3000/api/triaje/guardar', {
+        await axios.post(`${import.meta.env.VITE_API_URL}/api/triaje/guardar`, {
           ...triajeData,
           id_usuario: userId,
         });
@@ -115,7 +115,7 @@ const Register = () => {
     setRenviando(true);
     setMensajeReenvio('');
     try {
-      const res = await axios.post('http://localhost:3000/api/auth/reenviar-verificacion', {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/reenviar-verificacion`, {
         email: emailRegistrado,
       });
       setMensajeReenvio(res.data.message || 'Correo reenviado. Revisa tu bandeja.');

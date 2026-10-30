@@ -613,7 +613,7 @@ const Asistente = () => {
     inputRef.current?.focus();
 
     try {
-      const res = await axios.post('http://localhost:3000/api/chatbot/message', {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/chatbot/message`, {
         message: msg,
         userId,
         historial,
