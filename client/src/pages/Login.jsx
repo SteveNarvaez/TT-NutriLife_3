@@ -20,8 +20,8 @@ const Login = () => {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/login`, { email, password });
 
       localStorage.setItem('userId',   response.data.userId);
-      localStorage.setItem('userName', response.data.user.nombre);
       localStorage.setItem('token', response.data.token);
+      localStorage.setItem('userName', response.data.user.nombre);
       console.log('✅ Login exitoso. ID guardado:', response.data.userId);
       navigate('/dashboard');
 
