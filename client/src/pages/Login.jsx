@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
 const Login = () => {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError]       = useState(null);       // null | { tipo, mensaje, email }
+  const [error, setError]       = useState(null);
   const [reenviando, setRenviando]      = useState(false);
   const [mensajeReenvio, setMensajeReenvio] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+  const mensajeExito = location.state?.mensaje;
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -19,13 +21,13 @@ const Login = () => {
 
       localStorage.setItem('userId',   response.data.userId);
       localStorage.setItem('userName', response.data.user.nombre);
+      localStorage.setItem('token', response.data.token);
       console.log('✅ Login exitoso. ID guardado:', response.data.userId);
       navigate('/dashboard');
 
     } catch (err) {
       const data = err.response?.data;
       if (data?.error === 'EMAIL_NO_VERIFICADO') {
-        // Email no verificado — mostrar bloque especial con botón de reenvío
         setError({ tipo: 'no_verificado', mensaje: data.message, email: data.email });
       } else {
         setError({ tipo: 'generico', mensaje: data?.error || 'Error al iniciar sesión' });
@@ -55,6 +57,13 @@ const Login = () => {
           <h2 className="text-3xl font-extrabold text-gray-800">Hola de nuevo 🍏</h2>
           <p className="text-gray-500 mt-2">Ingresa a tu cuenta de NutriLife</p>
         </div>
+
+        {/* ── Mensaje de éxito al venir del registro ── */}
+        {mensajeExito && (
+          <div className="bg-green-50 border border-green-300 rounded-xl p-3 mb-6 text-center">
+            <p className="text-green-700 text-sm font-medium">✅ {mensajeExito}</p>
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div>

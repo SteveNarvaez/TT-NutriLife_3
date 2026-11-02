@@ -7,11 +7,10 @@ const ChatWidget = () => {
     { text: "¡Hola! Soy tu asistente de NutriLife. ¿En qué puedo ayudarte hoy?", sender: 'bot' }
   ]);
   const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false); // Estado para el indicador de carga
-  
+  const [isTyping, setIsTyping] = useState(false);
+
   const scrollRef = useRef(null);
 
-  // Auto-scroll al recibir o enviar mensajes
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -22,45 +21,39 @@ const ChatWidget = () => {
     const messageText = input.trim();
     if (!messageText) return;
 
-    // 1. Obtener el ID del usuario dinámicamente desde el almacenamiento local
-    // Asegúrate de guardar 'userId' en localStorage cuando el usuario haga login
-    const userId = localStorage.getItem('userId') || 'anonimo'; 
-
     const userMessage = { text: messageText, sender: 'user' };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
-    setIsTyping(true); // Activamos el indicador de "bot escribiendo"
+    setIsTyping(true);
 
     try {
-      // 2. Enviamos tanto el mensaje como el userId al backend
-      const storedId = localStorage.getItem('userId');
-const response = await axios.post('http://localhost:3000/api/chatbot/message', { 
-  message: input,
-  userId: storedId // <--- Lo enviamos al servidor
-});
+      const token  = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
 
-      const botReply = { 
-        text: response.data.reply, 
-        sender: 'bot' 
-      };
-      
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/chatbot/message`,
+        { message: messageText, userId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const botReply = { text: response.data.reply, sender: 'bot' };
       setMessages((prev) => [...prev, botReply]);
 
     } catch (error) {
       console.error("Error al conectar con el servidor:", error);
-      setMessages((prev) => [...prev, { 
-        text: "Error de conexión. Verifica que el servidor esté encendido.", 
-        sender: 'bot' 
+      setMessages((prev) => [...prev, {
+        text: "Error de conexión. Verifica que el servidor esté encendido.",
+        sender: 'bot'
       }]);
     } finally {
-      setIsTyping(false); // Apagamos el indicador de carga
+      setIsTyping(false);
     }
   };
 
   return (
     <div className="fixed bottom-6 right-6 z-50 font-sans">
       {/* Botón Flotante */}
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className="bg-green-600 text-white p-4 rounded-full shadow-lg hover:bg-green-700 transition-all flex items-center justify-center w-14 h-14 hover:scale-110 active:scale-95"
       >
@@ -70,23 +63,23 @@ const response = await axios.post('http://localhost:3000/api/chatbot/message', {
       {/* Ventana de Chat */}
       {isOpen && (
         <div className="absolute bottom-16 right-0 w-85 h-[450px] bg-white border rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-          
-          {/* Header con estilo dinámico */}
+
+          {/* Header */}
           <div className="bg-green-600 text-white p-4 font-bold flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-green-300 rounded-full animate-pulse"></div>
               <span>Asistente NutriLife</span>
             </div>
           </div>
-          
+
           {/* Cuerpo del Chat */}
           <div className="flex-1 p-4 overflow-y-auto flex flex-col space-y-3 bg-gray-50">
             {messages.map((msg, i) => (
-              <div 
-                key={i} 
+              <div
+                key={i}
                 className={`p-3 rounded-2xl max-w-[85%] text-sm leading-relaxed shadow-sm ${
-                  msg.sender === 'user' 
-                    ? 'bg-green-600 text-white self-end rounded-br-none' 
+                  msg.sender === 'user'
+                    ? 'bg-green-600 text-white self-end rounded-br-none'
                     : 'bg-white text-gray-800 self-start rounded-bl-none border border-gray-100'
                 }`}
               >
@@ -107,16 +100,16 @@ const response = await axios.post('http://localhost:3000/api/chatbot/message', {
 
           {/* Área de Input */}
           <div className="p-3 border-t bg-white flex items-center gap-2">
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
               className="flex-1 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all"
               placeholder="Pregunta sobre tu dieta..."
             />
-            <button 
-              onClick={sendMessage} 
+            <button
+              onClick={sendMessage}
               disabled={isTyping}
               className={`p-2 rounded-xl transition-all shadow-md ${
                 isTyping ? 'bg-gray-300' : 'bg-green-600 hover:bg-green-700 text-white'
