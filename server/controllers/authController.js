@@ -53,12 +53,11 @@ const login = async (req, res) => {
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
 
-    // ── NUEVO: generar token JWT ──────────────────────────
-    const token = jwt.sign(
-      { id: usuario.id_usuario, email: usuario.email, rol: usuario.rol },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+const token = jwt.sign(
+  { id: usuario.id_usuario, email: usuario.email, rol: usuario.rol },
+  process.env.JWT_VERIFY_SECRET,
+  { expiresIn: '7d' }
+);
 
     res.json({
       message: '¡Bienvenido!',
