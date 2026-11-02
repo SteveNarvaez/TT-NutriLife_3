@@ -960,7 +960,7 @@ async function llamarGeminiConReintento(payload, intentos = 3, espera = 1500) {
 const enviarMensaje = async (req, res) => {
   try {
     const { message, historial = [] } = req.body;
-    const userId = req.body.userId;
+    const userId = req.user.id;
 
     const perfilExiste = await pool.query(
       `SELECT id_medida FROM historial_medidas WHERE id_usuario = $1 LIMIT 1`,
