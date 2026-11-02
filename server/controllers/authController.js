@@ -72,4 +72,28 @@ const token = jwt.sign(
   }
 };
 
-module.exports = { register, login };
+// ──────────────────────────────────────────────────────────
+//  GET PERFIL
+// ──────────────────────────────────────────────────────────
+const getPerfil = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT id_usuario, nombre, email, fecha_nacimiento, sexo, rol, activo,
+              peso_kg, altura_cm, tmb_calculado, objetivo_actual, nivel_actividad,
+              triaje_completado, created_at
+       FROM usuarios
+       WHERE id_usuario = $1`,
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('ERROR GET PERFIL:', error);
+    res.status(500).json({ error: 'Error al obtener perfil' });
+  }
+};
+
+module.exports = { register, login, getPerfil };

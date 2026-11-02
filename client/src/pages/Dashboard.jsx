@@ -130,9 +130,11 @@ export default function Dashboard({ onLogout }) {
     if (!userId) return;
     try {
       setLoading(true);
+      const token = localStorage.getItem('token');
+      const authHeaders = { Authorization: `Bearer ${token}` };
       const [statsRes, perfilRes] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL}/api/graficas/stats/${userId}`),
-        fetch(`${import.meta.env.VITE_API_URL}/api/auth/perfil/${userId}`)
+        fetch(`${import.meta.env.VITE_API_URL}/api/graficas/stats/${userId}`, { headers: authHeaders }),
+        fetch(`${import.meta.env.VITE_API_URL}/api/auth/perfil/${userId}`,    { headers: authHeaders })
       ]);
       if (statsRes.ok)  setStats(await statsRes.json());
       if (perfilRes.ok) setPerfil(await perfilRes.json());
