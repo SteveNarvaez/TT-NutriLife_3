@@ -22,6 +22,7 @@ const Login = () => {
       localStorage.setItem('userId',   response.data.userId);
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('userName', response.data.user.nombre);
+      localStorage.setItem('userRol', response.data.user.rol || 'usuario');
       console.log('✅ Login exitoso. ID guardado:', response.data.userId);
       navigate('/dashboard');
 

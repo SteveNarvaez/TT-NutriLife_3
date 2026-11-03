@@ -63,7 +63,7 @@ const token = jwt.sign(
       message: '¡Bienvenido!',
       token,                          // ← el frontend guarda esto
       userId: usuario.id_usuario,     // ← puedes quitarlo luego
-      user: { id: usuario.id_usuario, nombre: usuario.nombre },
+      user: { id: usuario.id_usuario, nombre: usuario.nombre, rol: usuario.rol },
     });
 
   } catch (error) {
