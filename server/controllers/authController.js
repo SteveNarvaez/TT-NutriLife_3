@@ -79,11 +79,14 @@ const getPerfil = async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
-      `SELECT id_usuario, nombre, email, fecha_nacimiento, sexo, rol, activo,
-              peso_kg, altura_cm, tmb_calculado, objetivo_actual, nivel_actividad,
-              triaje_completado, created_at
-       FROM usuarios
-       WHERE id_usuario = $1`,
+      `SELECT u.id_usuario, u.nombre, u.email, u.fecha_nacimiento, u.sexo, u.rol, u.activo, u.fecha_registro,
+              m.peso_kg, m.altura_cm, m.tmb_calculado, m.objetivo_actual, m.nivel_actividad
+       FROM usuarios u
+       LEFT JOIN historial_medidas m ON m.id_usuario = u.id_usuario
+         AND m.fecha_registro = (
+           SELECT MAX(fecha_registro) FROM historial_medidas WHERE id_usuario = u.id_usuario
+         )
+       WHERE u.id_usuario = $1`,
       [id]
     );
     if (result.rows.length === 0) {
