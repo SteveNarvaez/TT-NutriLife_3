@@ -153,7 +153,15 @@ async function actualizarPeso({ id_usuario, nuevo_peso }) {
 }
 
 async function guardarEvaluacion({ id_usuario, edad, peso_kg, altura_cm, nivel_actividad, objetivo }) {
-  let tmb = (10 * peso_kg) + (6.25 * altura_cm) - (5 * edad) + 5;
+  // Mifflin-St Jeor: hombres +5, mujeres −161. El sexo se guardó al registrarse.
+  const sexoQ = await pool.query(
+    `SELECT sexo FROM usuarios WHERE id_usuario = $1`,
+    [id_usuario]
+  );
+  const esMujer = sexoQ.rows[0]?.sexo === 'Femenino';
+  const ajusteSexo = esMujer ? -161 : 5;
+
+  let tmb = (10 * peso_kg) + (6.25 * altura_cm) - (5 * edad) + ajusteSexo;
 
   const multiplicadores = {
     'sedentario': 1.2,
@@ -465,8 +473,11 @@ async function obtenerRutinaHoy({ id_usuario }) {
     };
   }
 
-  const diaDelMes = ahora.getDate();
-  const diaRutina = ((diaDelMes - 1) % 28) + 1;
+  const generadoEn = new Date(rutinaQ.rows[0].generado_en);
+  const hoy    = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  const inicio = new Date(generadoEn.getFullYear(), generadoEn.getMonth(), generadoEn.getDate());
+  const diasTranscurridos = Math.floor((hoy - inicio) / (1000 * 60 * 60 * 24));
+  const diaRutina = (diasTranscurridos % 28) + 1;
 
   const rutina      = rutinaQ.rows[0].rutina_json;
   const diaHoy      = rutina[diaRutina.toString()];
@@ -754,7 +765,7 @@ const tools = [{
   functionDeclarations: [
     {
       name: 'buscarAlimentos',
-      description: 'Busca alimentos del catálogo SMAE por grupo nutricional y calorías máximas',
+      description: 'Busca alimentos del catálogo  por grupo nutricional y calorías máximas',
       parameters: {
         type: 'OBJECT',
         properties: {
@@ -1047,7 +1058,7 @@ const enviarMensaje = async (req, res) => {
 
 RESTRICCIONES ESTRICTAS:
 - SOLO puedes responder sobre: nutrición, dietas, alimentos, calorías, macros, ejercicio, rutinas, peso, salud física y funciones de NutriLife.
-- Si el usuario pregunta cualquier otra cosa (tecnología, política, entretenimiento, etc.), responde EXACTAMENTE: "Solo puedo ayudarte con temas de nutrición, ejercicio y tu progreso en NutriLife. 🍏 ¿En qué te ayudo hoy?"
+- Si el usuario pregunta cualquier otra cosa (tecnología, política, entretenimiento, etc.), responde EXACTAMENTE: "Solo puedo ayudarte con temas de nutrición, ejercicio y tu progreso en NutriLife.  ¿En qué te ayudo hoy?"
 
 REGLAS DE DATOS — MUY IMPORTANTE:
 - Cuando el usuario pida su dieta, plan nutricional o qué comer: usa SIEMPRE obtenerDietaSemana(). NUNCA uses generarDietaCompleta() a menos que el usuario pida una dieta nueva explícitamente.
@@ -1076,6 +1087,19 @@ AJUSTE CALÓRICO POR FENOTIPO (ya aplicado automáticamente en obtenerDietaSeman
 CUANDO TE PREGUNTEN "¿en qué te basas?" O "¿cuáles son tus fuentes?":
 - Los planes nutricionales están basados en el Sistema Mexicano de Equivalencias Alimentarias (SMAE).
 - Las rutinas fueron diseñadas y validadas por el Entrenador Personal MARTÍNEZ ESPINOSA CARLOS JOSUÉ.
+
+ANTOJOS Y COMIDAS FUERA DEL PLAN:
+- Si el usuario dice que se le antoja o quiere comer algo fuera de su dieta
+  (tacos, pizza, hamburguesa, un postre, pan dulce, refresco, etc.),
+  NO lo regañes, NO se lo prohíbas y NO llames a ninguna función.
+- Responde con comprensión y en este sentido: "¡Está bien! Es importante
+  comer de vez en cuando algo que disfrutes 😊, pero recuerda que para ver
+  resultados debes apegarte a tu dieta la mayor parte del tiempo."
+- Puedes agregar UN consejo breve de moderación (una porción razonable,
+  acompañarlo con agua en vez de refresco, no repetirlo varios días seguidos).
+- Al final puedes ofrecerle cambiar una comida de hoy por algo del catálogo.
+  Solo si el usuario acepta o lo pide explícitamente, usa cambiarComidaHoy().
+- Responde corto: 2 a 4 líneas.
 
 CONTEXTO DE SESIÓN:
 - ID del usuario autenticado: ${userId}
