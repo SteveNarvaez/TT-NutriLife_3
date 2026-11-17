@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import { BadgeCheck, CircleAlert, Loader2, ArrowRight } from 'lucide-react';
+import AuthLayout from '../components/AuthLayout';
 
 const EmailVerificado = () => {
   const [searchParams] = useSearchParams();
@@ -33,55 +35,45 @@ const EmailVerificado = () => {
   }, [searchParams]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-6">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg border border-gray-100 text-center">
-
+    <AuthLayout>
+      <div className="card p-8 text-center">
         {estado === 'cargando' && (
           <>
-            <div className="text-5xl mb-4 animate-pulse">⏳</div>
-            <h2 className="text-xl font-bold text-gray-600">Verificando tu correo...</h2>
+            <Loader2 size={40} className="mx-auto animate-spin text-brand-500" />
+            <h2 className="mt-5 text-xl font-bold text-ink-900 dark:text-white">Verificando tu correo…</h2>
+            <p className="muted mt-2">Esto tomará solo un momento.</p>
           </>
         )}
 
         {estado === 'ok' && (
           <>
-            <div className="text-6xl mb-4">🎉</div>
-            <h2 className="text-2xl font-extrabold text-green-600 mb-2">
-              ¡Cuenta verificada{nombre ? `, ${nombre}` : ''}!
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+              <BadgeCheck size={34} />
+            </span>
+            <h2 className="mt-5 text-2xl font-bold tracking-tight text-ink-900 dark:text-white">
+              Cuenta verificada{nombre ? `, ${nombre}` : ''}
             </h2>
-            <p className="text-gray-500 mb-8">{mensaje}</p>
-            <Link
-              to="/login"
-              className="inline-block w-full bg-green-500 hover:bg-green-600 text-white font-bold p-3 rounded-xl transition shadow-lg"
-            >
-              Iniciar sesión →
-            </Link>
+            <p className="muted mt-2">{mensaje}</p>
+            <Link to="/login" className="btn-primary btn-lg mt-7 w-full">Iniciar sesión <ArrowRight size={18} /></Link>
           </>
         )}
 
         {estado === 'error' && (
           <>
-            <div className="text-6xl mb-4">❌</div>
-            <h2 className="text-2xl font-extrabold text-red-500 mb-2">Enlace inválido o expirado</h2>
-            <p className="text-gray-500 mb-8">{mensaje}</p>
-            <div className="flex flex-col gap-3">
-              <Link
-                to="/register"
-                className="inline-block w-full bg-green-500 hover:bg-green-600 text-white font-bold p-3 rounded-xl transition shadow-lg"
-              >
-                Volver al registro
-              </Link>
-              <Link
-                to="/login"
-                className="inline-block w-full border-2 border-gray-200 text-gray-500 font-bold p-3 rounded-xl hover:bg-gray-50 transition"
-              >
-                Ir al login
-              </Link>
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400">
+              <CircleAlert size={34} />
+            </span>
+            <h2 className="mt-5 text-2xl font-bold tracking-tight text-ink-900 dark:text-white">No pudimos verificar tu correo</h2>
+            <p className="muted mt-2">{mensaje}</p>
+            <div className="mt-7 grid gap-3">
+              <Link to="/login" className="btn-primary w-full">Ir a iniciar sesión</Link>
+              <Link to="/" className="btn-secondary w-full">Crear una cuenta nueva</Link>
             </div>
+            <p className="mt-5 text-xs text-ink-400">Desde el inicio de sesión puedes solicitar que te reenviemos el enlace.</p>
           </>
         )}
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

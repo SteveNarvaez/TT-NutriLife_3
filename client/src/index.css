@@ -1,1 +1,166 @@
 @import "tailwindcss";
+
+/* El modo oscuro se activa con la clase .dark en <html> (botón del dashboard) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─────────────────────────────────────────────────────────────
+   Tokens de marca (tomados del logotipo NutriLife)
+   ───────────────────────────────────────────────────────────── */
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* Verde NutriLife: hoja y texto "Nutri" */
+  --color-brand-50:  #effaf4;
+  --color-brand-100: #d8f2e3;
+  --color-brand-200: #b2e4c9;
+  --color-brand-300: #7fcfa6;
+  --color-brand-400: #45b27f;
+  --color-brand-500: #229762;
+  --color-brand-600: #187a4f;
+  --color-brand-700: #136142;
+  --color-brand-800: #0f4d36;
+  --color-brand-900: #0b3b2a;
+  --color-brand-950: #062219;
+
+  /* Gris pizarra: texto "Life" */
+  --color-ink-50:  #f6f8f8;
+  --color-ink-100: #eceff0;
+  --color-ink-200: #d9dfe1;
+  --color-ink-300: #b8c1c5;
+  --color-ink-400: #8b979c;
+  --color-ink-500: #67747a;
+  --color-ink-600: #4f5a60;
+  --color-ink-700: #3c454a;
+  --color-ink-800: #252c30;
+  --color-ink-900: #161b1e;
+  --color-ink-950: #0b0f11;
+
+  /* Acentos nutricionales */
+  --color-energy: #f59e0b;   /* calorías */
+  --color-protein: #2f7fd8;  /* proteína */
+  --color-carb: #22a06b;     /* carbohidratos */
+  --color-fat: #e8743b;      /* grasas */
+
+  --radius-card: 1.25rem;
+
+  --shadow-soft: 0 1px 2px rgb(11 59 42 / 0.04), 0 8px 24px -8px rgb(11 59 42 / 0.10);
+  --shadow-lift: 0 2px 4px rgb(11 59 42 / 0.05), 0 18px 40px -12px rgb(11 59 42 / 0.18);
+
+  --animate-fade-up: fade-up 0.35s cubic-bezier(.2,.7,.2,1) both;
+  --animate-scale-in: scale-in 0.22s cubic-bezier(.2,.7,.2,1) both;
+  --animate-pulse-line: pulse-line 2.4s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes pulse-line {
+    0%   { stroke-dashoffset: 260; }
+    60%  { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: 0; }
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Base
+   ───────────────────────────────────────────────────────────── */
+@layer base {
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body {
+    @apply bg-ink-50 font-sans text-ink-800 dark:bg-ink-950 dark:text-ink-100;
+  }
+  ::selection { @apply bg-brand-200 text-brand-900; }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-brand-500; }
+  button, [role="button"] { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  input[type="date"]::-webkit-calendar-picker-indicator { opacity: .55; cursor: pointer; }
+  .dark input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+}
+
+
+/* Utilidades base para botones y etiquetas (heredables con @apply) */
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold
+         transition duration-150 select-none active:scale-[0.98]
+         disabled:pointer-events-none disabled:opacity-50;
+}
+@utility chip {
+  @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Componentes reutilizables
+   ───────────────────────────────────────────────────────────── */
+@layer components {
+  /* Superficies */
+  .card {
+    @apply rounded-[var(--radius-card)] border border-ink-100 bg-white shadow-[var(--shadow-soft)]
+           dark:border-white/[0.06] dark:bg-ink-900;
+  }
+  .card-hover { @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)]; }
+
+  /* Tipografía */
+  .eyebrow { @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-400 dark:text-ink-500; }
+  .h-page  { @apply text-2xl font-bold tracking-tight text-ink-900 sm:text-[28px] dark:text-white; }
+  .h-card  { @apply text-base font-semibold text-ink-900 dark:text-white; }
+  .muted   { @apply text-sm text-ink-500 dark:text-ink-400; }
+
+  /* Formularios */
+  .field-label { @apply mb-1.5 block text-[13px] font-medium text-ink-700 dark:text-ink-200; }
+  .input {
+    @apply w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-[15px] text-ink-900
+           placeholder:text-ink-300 transition outline-none
+           focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15
+           dark:border-white/10 dark:bg-ink-900 dark:text-white dark:placeholder:text-ink-500;
+  }
+  .input-icon { @apply pl-10; }
+
+  /* Botones */
+  .btn-primary {
+    @apply btn bg-brand-600 text-white shadow-[0_8px_20px_-8px_rgb(24_122_79/0.7)]
+           hover:bg-brand-700;
+  }
+  .btn-secondary {
+    @apply btn border border-ink-200 bg-white text-ink-700 hover:border-ink-300 hover:bg-ink-50
+           dark:border-white/10 dark:bg-ink-900 dark:text-ink-100 dark:hover:bg-ink-800;
+  }
+  .btn-ghost { @apply btn text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-white/5; }
+  .btn-lg { @apply px-5 py-3 text-[15px]; }
+
+  /* Etiquetas */
+  .chip-brand  { @apply chip border-brand-200 bg-brand-50 text-brand-700 dark:border-brand-500/30 dark:bg-brand-500/10 dark:text-brand-300; }
+  .chip-amber  { @apply chip border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300; }
+  .chip-neutral{ @apply chip border-ink-200 bg-ink-50 text-ink-600 dark:border-white/10 dark:bg-white/5 dark:text-ink-300; }
+
+  /* Iconos en contenedor */
+  .icon-tile { @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl; }
+
+  /* Fondo con textura suave para pantallas de acceso */
+  .bg-aurora {
+    background:
+      radial-gradient(60rem 40rem at 10% -10%, rgb(178 228 201 / 0.55), transparent 60%),
+      radial-gradient(50rem 35rem at 110% 10%, rgb(216 242 227 / 0.8), transparent 60%),
+      radial-gradient(40rem 30rem at 50% 120%, rgb(236 239 240 / 0.9), transparent 60%),
+      #f6f8f8;
+  }
+  .dark .bg-aurora {
+    background:
+      radial-gradient(60rem 40rem at 10% -10%, rgb(19 97 66 / 0.35), transparent 60%),
+      radial-gradient(50rem 35rem at 110% 10%, rgb(15 77 54 / 0.35), transparent 60%),
+      #0b0f11;
+  }
+
+  /* Barra de desplazamiento discreta */
+  .scroll-thin { scrollbar-width: thin; scrollbar-color: rgb(184 193 197 / .6) transparent; }
+  .scroll-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scroll-thin::-webkit-scrollbar-thumb { background: rgb(184 193 197 / .6); border-radius: 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

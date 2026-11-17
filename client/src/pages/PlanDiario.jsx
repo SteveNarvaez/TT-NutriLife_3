@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { GlassWater, Sunrise, Sun, Moon, Dumbbell, Check, Loader2, CircleCheck, CircleAlert, Save } from 'lucide-react';
 
 const API = `${import.meta.env.VITE_API_URL}/api`;
 
 const PlanDiario = ({ userId }) => {
-  const uid = userId || localStorage.getItem('userId') || '1';
+  const uid = userId || localStorage.getItem('userId');
 
   const [tareas, setTareas] = useState([
-    { id: 1, tipo: 'agua',     titulo: 'Calculando tu requerimiento...', completado: false, icono: '💧' },
-    { id: 2, tipo: 'dieta',    titulo: 'Desayuno Proteico',              completado: false, icono: '🍳' },
-    { id: 3, tipo: 'dieta',    titulo: 'Comida Equilibrada',             completado: false, icono: '🥗' },
-    { id: 4, tipo: 'dieta',    titulo: 'Cena Ligera',                    completado: false, icono: '🌙' },
-    { id: 5, tipo: 'ejercicio',titulo: 'Rutina del Día',                 completado: false, icono: '🏋️' },
+    { id: 1, tipo: 'agua',     titulo: 'Calculando tu requerimiento...', completado: false, icono: GlassWater, tono: 'sky', detalle: 'Hidratación calculada con tu peso' },
+    { id: 2, tipo: 'dieta',    titulo: 'Desayuno Proteico',              completado: false, icono: Sunrise, tono: 'amber', detalle: 'Primera comida del día' },
+    { id: 3, tipo: 'dieta',    titulo: 'Comida Equilibrada',             completado: false, icono: Sun, tono: 'brand', detalle: 'Comida principal' },
+    { id: 4, tipo: 'dieta',    titulo: 'Cena Ligera',                    completado: false, icono: Moon, tono: 'violet', detalle: 'Última comida del día' },
+    { id: 5, tipo: 'ejercicio',titulo: 'Rutina del Día',                 completado: false, icono: Dumbbell, tono: 'rose', detalle: 'Pídela al asistente: «mi rutina de hoy»' },
   ]);
 
   // null = aún cargando | false = no guardado hoy | number = % ya guardado hoy
@@ -23,15 +24,17 @@ const PlanDiario = ({ userId }) => {
 
   // ── Al montar: peso para el agua + estado de hoy ──────────────────────────
   useEffect(() => {
+    if (!uid) { setYaGuardadoHoy(false); return; }
     const init = async () => {
       // 1. Calcular litros de agua según peso
       try {
         const r = await fetch(`${API}/usuario/peso/${uid}`);
         const d = await r.json();
-        const litros = (d.peso * 0.035).toFixed(1);
-        setTareas(prev => prev.map(t =>
-          t.tipo === 'agua' ? { ...t, titulo: `Tomar ${litros} Litros de Agua` } : t
-        ));
+        const peso = Number(d.peso);
+        const titulo = peso > 0
+          ? `Tomar ${(peso * 0.035).toFixed(1)} litros de agua`
+          : 'Mantente hidratado durante el día';
+        setTareas(prev => prev.map(t => t.tipo === 'agua' ? { ...t, titulo } : t));
       } catch { /* peso no crítico */ }
 
       // 2. Ver si ya guardó hoy → bloquear si es así
@@ -139,117 +142,103 @@ const PlanDiario = ({ userId }) => {
   // ── Estados de carga ───────────────────────────────────────────────────────
   if (yaGuardadoHoy === null) {
     return (
-      <div className="max-w-3xl mx-auto p-6 flex items-center justify-center" style={{ minHeight: 300 }}>
-        <div style={{ textAlign: 'center', color: '#9ca3af' }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>⏳</div>
-          <p>Cargando tu plan diario…</p>
-        </div>
+      <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 text-ink-400">
+        <Loader2 size={30} className="animate-spin text-brand-500" />
+        <p className="text-sm">Cargando tu plan diario…</p>
       </div>
     );
   }
 
   const bloqueado = yaGuardadoHoy !== false;
+  const pct = bloqueado ? yaGuardadoHoy : progreso;
+  const r = 44, circ = 2 * Math.PI * r;
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h2 className="text-3xl font-extrabold text-green-800 mb-2">Tu Plan Diario</h2>
-      <p className="text-gray-500 mb-8">
-        {bloqueado
-          ? '✅ Ya registraste tu progreso de hoy. ¡Vuelve mañana!'
-          : 'Marca tus objetivos conforme avance tu día para mantener tu racha.'}
-      </p>
-
-      {/* BARRA DE PROGRESO */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
-        <div className="flex justify-between items-center mb-2">
-          <span className="font-semibold text-gray-700">Progreso de hoy</span>
-          <span className="font-bold text-green-600">
-            {bloqueado ? `${yaGuardadoHoy}%` : `${progreso}%`}
-          </span>
+    <div className="mx-auto max-w-3xl space-y-6">
+      {/* Resumen del día */}
+      <section className="card flex flex-col items-center gap-6 p-6 sm:flex-row sm:p-7">
+        <div className="relative h-32 w-32 shrink-0">
+          <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
+            <circle cx="50" cy="50" r={r} className="stroke-ink-100 dark:stroke-white/10" strokeWidth="8" fill="none" />
+            <circle cx="50" cy="50" r={r} className="stroke-brand-500 transition-all duration-700" strokeWidth="8" fill="none"
+              strokeLinecap="round" strokeDasharray={`${(pct / 100) * circ} ${circ}`} />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-3xl font-bold tabular-nums text-ink-900 dark:text-white">{pct}%</span>
+            <span className="text-[11px] text-ink-400">completado</span>
+          </div>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-4">
-          <div
-            className="bg-green-500 h-4 rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${bloqueado ? yaGuardadoHoy : progreso}%` }}
-          />
-        </div>
-        {(bloqueado ? yaGuardadoHoy : progreso) === 100 && (
-          <p className="text-sm text-center text-green-600 mt-4 font-bold animate-pulse">
-            ¡Felicidades! Has completado tu plan del día. 🎉
+        <div className="text-center sm:text-left">
+          <p className="eyebrow">{new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <h1 className="h-page mt-1">Tu plan diario</h1>
+          <p className="muted mt-1.5">
+            {bloqueado
+              ? 'Ya registraste tu progreso de hoy. Vuelve mañana para un nuevo plan.'
+              : 'Marca tus objetivos conforme avance el día y guarda tu progreso para mantener tu racha.'}
           </p>
-        )}
-      </div>
+          <p className="mt-3 text-sm font-medium text-ink-600 dark:text-ink-300">
+            {bloqueado ? 'Progreso guardado' : `${tareasCompletadas} de ${tareas.length} objetivos`}
+          </p>
+        </div>
+      </section>
 
-      {/* LISTA DE TAREAS */}
-      <div className="space-y-4 mb-8">
-        {tareas.map((tarea) => (
-          <div
-            key={tarea.id}
-            onClick={() => toggleTarea(tarea.id)}
-            className={`flex items-center justify-between p-4 rounded-xl transition-all border-2 ${
-              bloqueado
-                ? 'cursor-not-allowed opacity-70 bg-gray-50 border-gray-100'
-                : tarea.completado
-                  ? 'cursor-pointer bg-green-50 border-green-200 opacity-75'
-                  : 'cursor-pointer bg-white border-transparent hover:border-green-100 shadow-sm'
-            }`}
-          >
-            <div className="flex items-center gap-4">
-              <span className="text-2xl">{tarea.icono}</span>
-              <span className={`font-medium text-lg ${
-                tarea.completado ? 'line-through text-gray-400' : 'text-gray-700'
+      {/* Lista de objetivos */}
+      <section className="card divide-y divide-ink-100 overflow-hidden dark:divide-white/[0.06]">
+        {tareas.map((tarea) => {
+          const Icon = tarea.icono;
+          const tonos = {
+            sky: 'bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400',
+            amber: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
+            brand: 'bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400',
+            violet: 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400',
+            rose: 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400',
+          };
+          return (
+            <button key={tarea.id} type="button" onClick={() => toggleTarea(tarea.id)} disabled={bloqueado}
+              aria-pressed={tarea.completado}
+              className={`flex w-full items-center gap-4 px-5 py-4 text-left transition-colors ${
+                bloqueado ? 'cursor-default opacity-80' : 'hover:bg-ink-50/70 dark:hover:bg-white/[0.03]'
               }`}>
-                {tarea.titulo}
+              <span className={`icon-tile ${tonos[tarea.tono]}`}><Icon size={20} /></span>
+              <span className="min-w-0 flex-1">
+                <span className={`block font-semibold ${tarea.completado ? 'text-ink-400 line-through decoration-ink-300' : 'text-ink-900 dark:text-white'}`}>
+                  {tarea.titulo}
+                </span>
+                <span className="block text-[13px] text-ink-400">{tarea.detalle}</span>
               </span>
-            </div>
-
-            <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${
-              tarea.completado ? 'bg-green-500 border-green-500' : 'border-gray-300'
-            }`}>
-              {tarea.completado && <span className="text-white text-xl">✓</span>}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* BOTÓN / ESTADO GUARDADO */}
-      <div className="flex flex-col items-center">
-        {bloqueado ? (
-          /* ── Ya registró hoy: muestra bloque informativo ── */
-          <div style={{
-            width: '100%',
-            background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
-            border: '2px solid #bbf7d0',
-            borderRadius: 16,
-            padding: '20px 24px',
-            textAlign: 'center',
-          }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
-            <p style={{ fontWeight: 700, color: '#15803d', fontSize: 16, marginBottom: 4 }}>
-              ¡Progreso guardado!
-            </p>
-            <p style={{ color: '#4b5563', fontSize: 13 }}>
-              Registraste <strong>{yaGuardadoHoy}%</strong> de constancia hoy.
-              Podrás actualizar tu plan mañana.
-            </p>
-          </div>
-        ) : (
-          /* ── Aún no ha guardado: botón activo ── */
-          <>
-            <button
-              onClick={handleGuardarProgreso}
-              disabled={guardando}
-              className="w-full md:w-auto px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              {guardando ? 'Guardando…' : 'Guardar mi progreso del día 🚀'}
+              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+                tarea.completado ? 'border-brand-600 bg-brand-600 text-white' : 'border-ink-200 dark:border-white/20'
+              }`}>
+                {tarea.completado && <Check size={15} strokeWidth={3} />}
+              </span>
             </button>
+          );
+        })}
+      </section>
 
-            {errorMsg && (
-              <p className="text-red-500 mt-3 font-medium text-sm">{errorMsg}</p>
-            )}
-          </>
-        )}
-      </div>
+      {/* Guardar / estado */}
+      {bloqueado ? (
+        <div className="flex items-center gap-4 rounded-2xl border border-brand-200 bg-brand-50 p-5 dark:border-brand-500/30 dark:bg-brand-500/10">
+          <CircleCheck size={28} className="shrink-0 text-brand-600 dark:text-brand-400" />
+          <div>
+            <p className="font-semibold text-brand-900 dark:text-brand-100">Progreso guardado</p>
+            <p className="text-sm text-brand-800/80 dark:text-brand-200/80">
+              Registraste <strong>{yaGuardadoHoy}%</strong> de constancia hoy. Podrás actualizar tu plan mañana.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+          <p className="text-[13px] text-ink-400">Al guardar, tu progreso de hoy queda registrado y el plan se bloquea hasta mañana.</p>
+          <button onClick={handleGuardarProgreso} disabled={guardando} className="btn-primary btn-lg w-full shrink-0 sm:w-auto">
+            {guardando ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            {guardando ? 'Guardando…' : 'Guardar mi progreso'}
+          </button>
+        </div>
+      )}
+      {errorMsg && (
+        <p role="alert" className="flex items-center justify-center gap-2 text-sm font-medium text-red-600"><CircleAlert size={16} /> {errorMsg}</p>
+      )}
     </div>
   );
 };

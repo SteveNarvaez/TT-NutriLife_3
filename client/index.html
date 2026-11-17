@@ -1,10 +1,31 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>client</title>
+    <title>NutriLife · Seguimiento Nutricional Inteligente</title>
+    <meta name="description" content="NutriLife: plataforma de seguimiento nutricional y de actividad física con asistente inteligente, planes personalizados y triaje de salud." />
+    <meta name="theme-color" content="#187a4f" />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="NutriLife · Seguimiento Nutricional Inteligente" />
+    <meta property="og:description" content="Planes de alimentación y entrenamiento personalizados con un asistente inteligente." />
+    <meta property="og:image" content="/og-image.jpg" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Aplica el tema guardado antes de pintar, para evitar parpadeos -->
+    <script>
+      try {
+        var t = localStorage.getItem('nl_theme');
+        if (t === 'dark') document.documentElement.classList.add('dark');
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,24 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Dumbbell, Salad, Shuffle, Flame, UserRound, Scale, Trash2, Send, Moon, Sunrise, Sun, Apple, Timer, PencilLine, Utensils, ListChecks } from 'lucide-react';
 import axios from 'axios';
 
 // ─── Estilos inyectados una sola vez ───────────────────────────────────────
 const STYLES = `
   .nl-chat-root {
+    --s: #fff; --s2: #f7f9f8; --b: var(--color-ink-100); --t: var(--color-ink-900);
+    --t2: var(--color-ink-500); --t3: var(--color-ink-400);
+    --soft: var(--color-brand-50); --soft-b: var(--color-brand-100);
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: #fff;
-    border-radius: 20px;
-    border: 1px solid #e5e7eb;
+    background: var(--s);
+    border-radius: var(--radius-card);
+    border: 1px solid var(--b);
     overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: inherit;
+    box-shadow: var(--shadow-soft);
   }
 
   /* HEADER */
   .nl-header {
     padding: 14px 18px;
-    background: #fff;
-    border-bottom: 1px solid #f0f0f0;
+    background: var(--s);
+    border-bottom: 1px solid var(--b);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -27,38 +32,38 @@ const STYLES = `
   .nl-header-left { display: flex; align-items: center; gap: 11px; }
   .nl-avatar {
     width: 38px; height: 38px; border-radius: 50%;
-    background: linear-gradient(135deg, #16a34a, #0d9488);
+    background: linear-gradient(135deg, var(--color-brand-600), var(--color-brand-800));
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; font-size: 18px;
   }
-  .nl-header-title { font-size: 14.5px; font-weight: 700; color: #111; }
-  .nl-header-sub { font-size: 11.5px; color: #9ca3af; margin-top: 1px; display: flex; align-items: center; gap: 5px; }
-  .nl-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block; }
+  .nl-header-title { font-size: 14.5px; font-weight: 700; color: var(--t); }
+  .nl-header-sub { font-size: 11.5px; color: var(--t3); margin-top: 1px; display: flex; align-items: center; gap: 5px; }
+  .nl-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-brand-400); display: inline-block; }
   .nl-clear-btn {
-    padding: 6px 12px; border-radius: 8px; border: 1px solid #e5e7eb;
-    background: none; cursor: pointer; font-size: 12px; color: #6b7280;
+    padding: 6px 12px; border-radius: 8px; border: 1px solid var(--b);
+    background: none; cursor: pointer; font-size: 12px; color: var(--t2);
     display: flex; align-items: center; gap: 5px;
     transition: background 0.15s, color 0.15s;
   }
-  .nl-clear-btn:hover { background: #f9fafb; color: #374151; }
+  .nl-clear-btn:hover { background: var(--s2); color: var(--t); }
 
   /* QUICK CHIPS */
   .nl-chips {
     padding: 9px 14px;
     display: flex; gap: 7px; overflow-x: auto;
     scrollbar-width: none;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--b);
     flex-shrink: 0;
   }
   .nl-chips::-webkit-scrollbar { display: none; }
   .nl-chip {
     white-space: nowrap; padding: 5px 12px; border-radius: 20px;
-    border: 1px solid #e5e7eb; background: #f9fafb;
-    font-size: 12px; color: #6b7280; cursor: pointer;
+    border: 1px solid var(--b); background: var(--s2);
+    font-size: 12px; color: var(--t2); cursor: pointer;
     display: flex; align-items: center; gap: 5px;
     transition: all 0.15s; flex-shrink: 0;
   }
-  .nl-chip:hover { border-color: #16a34a; color: #16a34a; background: #f0fdf4; }
+  .nl-chip:hover { border-color: var(--color-brand-600); color: var(--color-brand-600); background: var(--soft); }
 
   /* MESSAGES */
   .nl-messages {
@@ -66,13 +71,13 @@ const STYLES = `
     padding: 16px; display: flex;
     flex-direction: column; gap: 12px;
     scroll-behavior: smooth;
-    background: #fafafa;
+    background: var(--s2);
   }
   .nl-messages::-webkit-scrollbar { width: 4px; }
-  .nl-messages::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+  .nl-messages::-webkit-scrollbar-thumb { background: var(--b); border-radius: 4px; }
 
   .nl-timestamp {
-    text-align: center; font-size: 11px; color: #d1d5db;
+    text-align: center; font-size: 11px; color: var(--t3);
     margin: 4px 0;
   }
 
@@ -81,7 +86,7 @@ const STYLES = `
 
   .nl-msg-avatar {
     width: 28px; height: 28px; border-radius: 50%;
-    background: linear-gradient(135deg, #16a34a, #0d9488);
+    background: linear-gradient(135deg, var(--color-brand-600), var(--color-brand-800));
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; font-size: 14px; margin-top: 2px;
   }
@@ -92,11 +97,11 @@ const STYLES = `
     animation: nlFadeUp 0.22s ease;
   }
   .nl-bubble.nl-bot {
-    background: #fff; border: 1px solid #e5e7eb;
-    color: #1f2937; border-top-left-radius: 4px;
+    background: var(--s); border: 1px solid var(--b);
+    color: var(--t); border-top-left-radius: 4px;
   }
   .nl-bubble.nl-user {
-    background: #16a34a; color: #fff;
+    background: var(--color-brand-600); color: #fff;
     border-top-right-radius: 4px;
   }
 
@@ -106,11 +111,11 @@ const STYLES = `
   .nl-card-rutina {
     max-width: 88%;
     border-radius: 16px; border-top-left-radius: 4px;
-    border: 1px solid #e5e7eb; overflow: hidden;
-    background: #fff; animation: nlFadeUp 0.22s ease;
+    border: 1px solid var(--b); overflow: hidden;
+    background: var(--s); animation: nlFadeUp 0.22s ease;
   }
   .nl-rutina-header {
-    background: linear-gradient(135deg, #15803d, #0f766e);
+    background: linear-gradient(135deg, var(--color-brand-700), var(--color-brand-900));
     padding: 11px 14px;
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   }
@@ -124,21 +129,21 @@ const STYLES = `
 
   .nl-ejercicio-row {
     display: flex; align-items: center; gap: 10px;
-    padding: 9px 14px; border-bottom: 1px solid #f5f5f5;
+    padding: 9px 14px; border-bottom: 1px solid var(--b);
     cursor: pointer; transition: background 0.15s;
   }
-  .nl-ejercicio-row:hover { background: #f9fafb; }
+  .nl-ejercicio-row:hover { background: var(--s2); }
   .nl-ejercicio-row:last-child { border-bottom: none; }
   .nl-ej-num {
     width: 22px; height: 22px; border-radius: 50%;
-    background: #f0fdf4; border: 1px solid #dcfce7;
+    background: var(--soft); border: 1px solid var(--soft-b);
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700; color: #16a34a;
+    font-size: 11px; font-weight: 700; color: var(--color-brand-600);
     flex-shrink: 0;
   }
   .nl-ej-info { flex: 1; min-width: 0; }
-  .nl-ej-nombre { font-size: 12.5px; font-weight: 600; color: #1f2937; }
-  .nl-ej-musculo { font-size: 10.5px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
+  .nl-ej-nombre { font-size: 12.5px; font-weight: 600; color: var(--t); }
+  .nl-ej-musculo { font-size: 10.5px; color: var(--t3); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
 
   /* Imagen de ejercicio expandible */
   .nl-ej-img-wrap {
@@ -151,7 +156,7 @@ const STYLES = `
     object-fit: contain; display: block;
   }
   .nl-ej-img-btn {
-    font-size: 10px; color: #16a34a; margin-left: auto;
+    font-size: 10px; color: var(--color-brand-600); margin-left: auto;
     background: none; border: none; cursor: pointer; padding: 2px 4px;
     font-weight: 600; flex-shrink: 0;
   }
@@ -159,22 +164,22 @@ const STYLES = `
   .nl-pill {
     font-size: 11px; font-weight: 600;
     padding: 2px 8px; border-radius: 20px;
-    background: #f0fdf4; color: #16a34a;
-    border: 1px solid #dcfce7;
+    background: var(--soft); color: var(--color-brand-600);
+    border: 1px solid var(--soft-b);
     white-space: nowrap;
   }
-  .nl-pill.grey { background: #f9fafb; color: #6b7280; border-color: #e5e7eb; }
+  .nl-pill.grey { background: var(--s2); color: var(--t2); border-color: var(--b); }
 
   .nl-rutina-footer {
-    padding: 8px 14px; background: #fafafa;
-    border-top: 1px solid #f0f0f0;
-    font-size: 11.5px; color: #9ca3af;
+    padding: 8px 14px; background: var(--s2);
+    border-top: 1px solid var(--b);
+    font-size: 11.5px; color: var(--t3);
     display: flex; align-items: center; gap: 5px;
   }
 
   .nl-descanso {
     padding: 18px 14px; text-align: center;
-    font-size: 13px; color: #6b7280;
+    font-size: 13px; color: var(--t2);
   }
   .nl-descanso-icon { font-size: 28px; margin-bottom: 6px; }
 
@@ -184,11 +189,11 @@ const STYLES = `
   .nl-card-dieta {
     max-width: 88%;
     border-radius: 16px; border-top-left-radius: 4px;
-    border: 1px solid #e5e7eb; overflow: hidden;
-    background: #fff; animation: nlFadeUp 0.22s ease;
+    border: 1px solid var(--b); overflow: hidden;
+    background: var(--s); animation: nlFadeUp 0.22s ease;
   }
   .nl-dieta-header {
-    background: linear-gradient(135deg, #d97706, #16a34a);
+    background: linear-gradient(135deg, var(--color-brand-800), var(--color-brand-600));
     padding: 11px 14px;
     display: flex; align-items: center; justify-content: space-between;
     gap: 10px;
@@ -200,48 +205,48 @@ const STYLES = `
 
   .nl-macros-row {
     display: grid; grid-template-columns: repeat(3, 1fr);
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--b);
   }
   .nl-macro-cell {
     padding: 9px 8px; text-align: center;
-    border-right: 1px solid #f0f0f0;
+    border-right: 1px solid var(--b);
   }
   .nl-macro-cell:last-child { border-right: none; }
   .nl-macro-val { font-size: 15px; font-weight: 700; }
   .nl-macro-val.prot { color: #f97316; }
   .nl-macro-val.carb { color: #8b5cf6; }
   .nl-macro-val.fat  { color: #f59e0b; }
-  .nl-macro-lbl { font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
+  .nl-macro-lbl { font-size: 10px; color: var(--t3); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
 
   .nl-comida-row {
     display: flex; align-items: flex-start; gap: 10px;
-    padding: 10px 14px; border-bottom: 1px solid #f5f5f5;
+    padding: 10px 14px; border-bottom: 1px solid var(--b);
   }
   .nl-comida-row:last-child { border-bottom: none; }
   .nl-comida-icon {
     width: 32px; height: 32px; border-radius: 8px;
-    background: #f9fafb; border: 1px solid #f0f0f0;
+    background: var(--s2); border: 1px solid var(--b);
     display: flex; align-items: center; justify-content: center;
     font-size: 17px; flex-shrink: 0;
   }
   .nl-comida-info { flex: 1; min-width: 0; }
-  .nl-comida-tiempo { font-size: 10.5px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
-  .nl-comida-nombre { font-size: 12.5px; font-weight: 600; color: #1f2937; margin-top: 1px; }
-  .nl-comida-desc { font-size: 11.5px; color: #9ca3af; margin-top: 2px; line-height: 1.45; }
+  .nl-comida-tiempo { font-size: 10.5px; color: var(--t3); text-transform: uppercase; letter-spacing: 0.05em; }
+  .nl-comida-nombre { font-size: 12.5px; font-weight: 600; color: var(--t); margin-top: 1px; }
+  .nl-comida-desc { font-size: 11.5px; color: var(--t3); margin-top: 2px; line-height: 1.45; }
   .nl-comida-override { font-size: 10px; color: #d97706; font-weight: 600; margin-top: 2px; }
   .nl-comida-kcal {
     font-size: 11.5px; font-weight: 700;
     padding: 3px 8px; border-radius: 20px;
-    background: #f0fdf4; color: #16a34a;
+    background: var(--soft); color: var(--color-brand-600);
     flex-shrink: 0; margin-top: 3px;
-    border: 1px solid #dcfce7;
+    border: 1px solid var(--soft-b);
   }
 
   .nl-dieta-footer {
-    padding: 8px 14px; background: #fafafa;
-    border-top: 1px solid #f0f0f0;
+    padding: 8px 14px; background: var(--s2);
+    border-top: 1px solid var(--b);
     display: flex; align-items: center; gap: 6px;
-    font-size: 11.5px; color: #9ca3af;
+    font-size: 11.5px; color: var(--t3);
   }
   .nl-fenotipo-tag {
     padding: 1px 8px; border-radius: 20px;
@@ -249,7 +254,7 @@ const STYLES = `
     background: rgba(139,92,246,0.12); color: #8b5cf6;
     text-transform: uppercase; letter-spacing: 0.05em;
   }
-  .nl-ajuste-pos { color: #16a34a; font-weight: 600; }
+  .nl-ajuste-pos { color: var(--color-brand-600); font-weight: 600; }
   .nl-ajuste-neg { color: #ef4444; font-weight: 600; }
 
   /* ═══════════════════════════════════════
@@ -258,37 +263,37 @@ const STYLES = `
   .nl-card-split {
     max-width: 88%;
     border-radius: 16px; border-top-left-radius: 4px;
-    border: 1px solid #e5e7eb; overflow: hidden;
-    background: #fff; animation: nlFadeUp 0.22s ease;
+    border: 1px solid var(--b); overflow: hidden;
+    background: var(--s); animation: nlFadeUp 0.22s ease;
   }
   .nl-split-header {
-    background: linear-gradient(135deg, #7c3aed, #16a34a);
+    background: linear-gradient(135deg, var(--color-ink-800), var(--color-brand-600));
     padding: 11px 14px;
   }
   .nl-split-header-title { font-size: 13.5px; font-weight: 700; color: #fff; }
   .nl-split-header-sub   { font-size: 11px; color: rgba(255,255,255,0.75); margin-top: 2px; }
   .nl-split-opt {
     display: flex; align-items: center; gap: 10px;
-    padding: 10px 14px; border-bottom: 1px solid #f5f5f5;
+    padding: 10px 14px; border-bottom: 1px solid var(--b);
     cursor: pointer; transition: background 0.12s;
   }
   .nl-split-opt:last-child { border-bottom: none; }
-  .nl-split-opt:hover { background: #f0fdf4; }
+  .nl-split-opt:hover { background: var(--soft); }
   .nl-split-num {
     width: 26px; height: 26px; border-radius: 8px;
-    background: #f9fafb; border: 1px solid #e5e7eb;
+    background: var(--s2); border: 1px solid var(--b);
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 700; color: #6b7280;
+    font-size: 12px; font-weight: 700; color: var(--t2);
     flex-shrink: 0;
   }
   .nl-split-info { flex: 1; min-width: 0; }
-  .nl-split-nombre { font-size: 12.5px; font-weight: 600; color: #1f2937; }
-  .nl-split-dias   { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+  .nl-split-nombre { font-size: 12.5px; font-weight: 600; color: var(--t); }
+  .nl-split-dias   { font-size: 11px; color: var(--t3); margin-top: 1px; }
   .nl-split-tag {
     font-size: 10px; font-weight: 600;
     padding: 2px 7px; border-radius: 20px; flex-shrink: 0;
   }
-  .nl-split-tag.pop  { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+  .nl-split-tag.pop  { background: var(--soft); color: var(--color-brand-600); border: 1px solid var(--soft-b); }
   .nl-split-tag.clas { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
   .nl-split-tag.sci  { background: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; }
 
@@ -296,13 +301,13 @@ const STYLES = `
   .nl-typing {
     display: flex; align-items: center; gap: 4px;
     padding: 10px 14px;
-    background: #fff; border: 1px solid #e5e7eb;
+    background: var(--s); border: 1px solid var(--b);
     border-radius: 16px; border-top-left-radius: 4px;
     width: fit-content;
   }
   .nl-typing-dot {
     width: 6px; height: 6px; border-radius: 50%;
-    background: #d1d5db; animation: nlBounce 1.2s infinite;
+    background: var(--t3); animation: nlBounce 1.2s infinite;
   }
   .nl-typing-dot:nth-child(2) { animation-delay: 0.18s; }
   .nl-typing-dot:nth-child(3) { animation-delay: 0.36s; }
@@ -310,24 +315,24 @@ const STYLES = `
   /* INPUT */
   .nl-input-area {
     padding: 11px 14px;
-    background: #fff; border-top: 1px solid #f0f0f0;
+    background: var(--s); border-top: 1px solid var(--b);
     display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0;
   }
   .nl-textarea {
-    flex: 1; background: #f9fafb;
-    border: 1px solid #e5e7eb; border-radius: 12px;
+    flex: 1; background: var(--s2);
+    border: 1px solid var(--b); border-radius: 12px;
     padding: 10px 13px; font-size: 13.5px;
-    color: #111; font-family: inherit;
+    color: var(--t); font-family: inherit;
     resize: none; outline: none;
     min-height: 42px; max-height: 110px;
     transition: border-color 0.15s;
     line-height: 1.5;
   }
-  .nl-textarea:focus { border-color: #16a34a; }
-  .nl-textarea::placeholder { color: #d1d5db; }
+  .nl-textarea:focus { border-color: var(--color-brand-600); }
+  .nl-textarea::placeholder { color: var(--t3); }
   .nl-send-btn {
     width: 40px; height: 40px; border-radius: 12px;
-    background: #16a34a; border: none; cursor: pointer;
+    background: var(--color-brand-600); border: none; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; transition: opacity 0.15s, transform 0.1s;
     font-size: 16px;
@@ -344,21 +349,39 @@ const STYLES = `
     0%, 60%, 100% { transform: translateY(0); }
     30% { transform: translateY(-5px); }
   }
+
+  /* Modo oscuro */
+  .dark .nl-chat-root {
+    --s: var(--color-ink-900); --s2: #0f1517; --b: rgb(255 255 255 / 0.07);
+    --t: #fff; --t2: var(--color-ink-300); --t3: var(--color-ink-500);
+    --soft: rgb(34 151 98 / 0.12); --soft-b: rgb(34 151 98 / 0.25);
+  }
+  /* Avatares con el símbolo de la marca */
+  .nl-avatar, .nl-msg-avatar { background: var(--s) !important; border: 1px solid var(--b); }
+  .nl-avatar img { width: 72%; height: 72%; object-fit: contain; }
+  .nl-msg-avatar img { width: 74%; height: 74%; object-fit: contain; }
+  .nl-msg-avatar.nl-me { background: var(--color-brand-600) !important; border: none; color: #fff; }
+  .nl-chip svg, .nl-clear-btn svg { flex-shrink: 0; }
+  .nl-send-btn { color: #fff; box-shadow: 0 8px 18px -8px rgb(24 122 79 / 0.8); }
+  .nl-disclaimer { padding: 0 14px 10px; font-size: 11px; color: var(--t3); background: var(--s); text-align: center; }
+  .nl-header-title { color: var(--t); }
+  .nl-comida-icon svg, .nl-descanso-icon svg { color: var(--color-brand-600); }
+  .nl-descanso-icon { display: flex; justify-content: center; }
 `;
 
 // ─── Chips de acceso rápido ────────────────────────────────────────────────
 const CHIPS = [
-  { label: '🏋️ Mi rutina hoy',  msg: 'dame mi rutina de hoy' },
-  { label: '🥗 Mi dieta',        msg: 'dame mi dieta de esta semana' },
-  { label: '🔀 Elegir split',    msg: 'quiero elegir mi split de entrenamiento' },
-  { label: '🔥 Calorías hoy',    msg: '¿cuántas calorías llevo hoy?' },
-  { label: '👤 Mi perfil',       msg: 'quiero ver mis datos' },
-  { label: '⚖️ Actualizar peso', msg: 'quiero actualizar mi peso' },
+  { icon: Dumbbell,  label: 'Mi rutina de hoy', msg: 'dame mi rutina de hoy' },
+  { icon: Salad,     label: 'Mi dieta',         msg: 'dame mi dieta de esta semana' },
+  { icon: Shuffle,   label: 'Elegir split',     msg: 'quiero elegir mi split de entrenamiento' },
+  { icon: Flame,     label: 'Calorías de hoy',  msg: '¿cuántas calorías llevo hoy?' },
+  { icon: UserRound, label: 'Mi perfil',        msg: 'quiero ver mis datos' },
+  { icon: Scale,     label: 'Actualizar peso',  msg: 'quiero actualizar mi peso' },
 ];
 
 // ─── Mensaje de bienvenida ─────────────────────────────────────────────────
 const WELCOME = {
-  text: '¡Hola! 👋 Soy tu asistente NutriLife. Puedo darte tu rutina del día, tu plan de dieta semanal, ayudarte a elegir tu split de entrenamiento o responder cualquier duda. ¿En qué te ayudo?',
+  text: '¡Hola! Soy tu asistente NutriLife. Puedo darte tu rutina del día, tu plan de dieta semanal, ayudarte a elegir tu split de entrenamiento o responder cualquier duda. ¿En qué te ayudo?',
   sender: 'bot',
   tipo: 'text',
 };
@@ -377,9 +400,9 @@ const TarjetaRutina = ({ data }) => {
           <span className="nl-rutina-dia">Semana {data.semana}</span>
         </div>
         <div className="nl-descanso">
-          <div className="nl-descanso-icon">😴</div>
+          <div className="nl-descanso-icon"><Moon size={28} /></div>
           <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>Día de Descanso</div>
-          <div>Hoy toca recuperación. Descansa, hidrátate y duerme bien. 💧</div>
+          <div>Hoy toca recuperación. Descansa, hidrátate y duerme bien.</div>
         </div>
       </div>
     );
@@ -423,9 +446,9 @@ const TarjetaRutina = ({ data }) => {
       ))}
 
       <div className="nl-rutina-footer">
-        ⏱ Descanso de <strong style={{ color: '#d97706', margin: '0 2px' }}>60–90 seg</strong> entre series
+        <Timer size={13} /> Descanso de <strong style={{ color: '#d97706', margin: '0 2px' }}>60–90 seg</strong> entre series
         {data.ejercicios?.some(e => e.img_url) && (
-          <span style={{ marginLeft: 'auto', fontSize: 10, color: '#16a34a' }}>▼ toca un ejercicio para ver imagen</span>
+          <span style={{ marginLeft: 'auto', fontSize: 10, color: '#16a34a' }}>Toca un ejercicio para ver la imagen</span>
         )}
       </div>
     </div>
@@ -444,7 +467,7 @@ const TarjetaDieta = ({ data, onCambiarComida }) => {
   const carb = Math.round((kcalTotal * 0.45) / 4);
   const fat  = Math.round((kcalTotal * 0.25) / 9);
 
-  const ICONOS = { Desayuno: '🌅', Comida: '☀️', Cena: '🌙', Snack: '🍎' };
+  const ICONOS = { Desayuno: Sunrise, Comida: Sun, Cena: Moon, Snack: Apple };
   const momentos = ['Desayuno', 'Comida', 'Cena', 'Snack'].filter(m => dieta[m]);
 
   const ajusteStr = ajuste_fenotipo > 0
@@ -456,7 +479,7 @@ const TarjetaDieta = ({ data, onCambiarComida }) => {
   return (
     <div className="nl-card-dieta">
       <div className="nl-dieta-header">
-        <div className="nl-dieta-title">🥗 Plan nutricional</div>
+        <div className="nl-dieta-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Utensils size={15} /> Plan nutricional</div>
         <div className="nl-dieta-kcal-wrap">
           <div className="nl-dieta-kcal">{kcalTotal.toLocaleString()}</div>
           <div className="nl-dieta-kcal-label">kcal · objetivo diario</div>
@@ -482,13 +505,13 @@ const TarjetaDieta = ({ data, onCambiarComida }) => {
         const comida = dieta[momento];
         return (
           <div className="nl-comida-row" key={momento}>
-            <div className="nl-comida-icon">{ICONOS[momento] || '🍽️'}</div>
+            <div className="nl-comida-icon">{React.createElement(ICONOS[momento] || Utensils, { size: 17 })}</div>
             <div className="nl-comida-info">
               <div className="nl-comida-tiempo">{momento} · {comida.hora || ''}</div>
               <div className="nl-comida-nombre">{comida.nombre || momento}</div>
               <div className="nl-comida-desc">{comida.descripcion || ''}</div>
               {comida._override && (
-                <div className="nl-comida-override">✏️ Cambiado para hoy</div>
+                <div className="nl-comida-override">Cambiado para hoy</div>
               )}
               {onCambiarComida && (
                 <button
@@ -533,7 +556,7 @@ const SelectorSplit = ({ onElegir }) => {
   return (
     <div className="nl-card-split">
       <div className="nl-split-header">
-        <div className="nl-split-header-title">🏋️ Elige tu división de entrenamiento</div>
+        <div className="nl-split-header-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><ListChecks size={15} /> Elige tu división de entrenamiento</div>
         <div className="nl-split-header-sub">Tu rutina mensual (28 días) se generará según tu elección</div>
       </div>
       {splits.map((s, i) => (
@@ -584,11 +607,11 @@ const Asistente = () => {
 
   // Persistir en localStorage
   useEffect(() => {
-    try { localStorage.setItem('nutrilife_messages_v2', JSON.stringify(messages)); } catch {}
+    try { localStorage.setItem('nutrilife_messages_v2', JSON.stringify(messages)); } catch { /* almacenamiento no disponible */ }
   }, [messages]);
 
   useEffect(() => {
-    try { localStorage.setItem('nutrilife_historial_v2', JSON.stringify(historial)); } catch {}
+    try { localStorage.setItem('nutrilife_historial_v2', JSON.stringify(historial)); } catch { /* almacenamiento no disponible */ }
   }, [historial]);
 
   // Auto-scroll
@@ -613,12 +636,13 @@ const Asistente = () => {
     inputRef.current?.focus();
 
     try {
-      const token = localStorage.getItem('token');
       const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/chatbot/message`, {
-      message: msg,
-      userId,
-      historial,
-    }, { headers: { Authorization: `Bearer ${token}` } });
+        message: msg,
+        userId,
+        historial,
+      }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
 
       const { reply, tipo, data } = res.data;
 
@@ -660,7 +684,7 @@ const Asistente = () => {
   const limpiarChat = () => {
     localStorage.removeItem('nutrilife_messages_v2');
     localStorage.removeItem('nutrilife_historial_v2');
-    setMessages([{ ...WELCOME, text: '¡Conversación nueva! ¿En qué te ayudo hoy? 🍏' }]);
+    setMessages([{ ...WELCOME, text: 'Conversación nueva. ¿En qué te ayudo hoy?' }]);
     setHistorial([]);
     inputRef.current?.focus();
   };
@@ -679,7 +703,9 @@ const Asistente = () => {
   // ── Formatear texto markdown básico ────────────────────────────────────
   const formatText = (text) => {
     if (!text) return '';
-    return text
+    return String(text)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/\n/g, '<br/>');
@@ -691,7 +717,7 @@ const Asistente = () => {
       return (
         <div key={idx} className="nl-row nl-user">
           <div className="nl-bubble nl-user">{msg.text}</div>
-          <div className="nl-msg-avatar" style={{ background: '#e5e7eb', color: '#6b7280', fontSize: 14 }}>👤</div>
+          <div className="nl-msg-avatar nl-me"><UserRound size={15} /></div>
         </div>
       );
     }
@@ -702,7 +728,7 @@ const Asistente = () => {
     if (tipo === 'rutina' && msg.data) {
       return (
         <div key={idx} className="nl-row">
-          <div className="nl-msg-avatar">🍏</div>
+          <div className="nl-msg-avatar"><img src="/brand/logo-mark.webp" alt="" /></div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {msg.text && (
               <div className="nl-bubble nl-bot"
@@ -718,7 +744,7 @@ const Asistente = () => {
     if (tipo === 'dieta' && msg.data) {
       return (
         <div key={idx} className="nl-row">
-          <div className="nl-msg-avatar">🍏</div>
+          <div className="nl-msg-avatar"><img src="/brand/logo-mark.webp" alt="" /></div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {msg.text && (
               <div className="nl-bubble nl-bot"
@@ -734,7 +760,7 @@ const Asistente = () => {
     if (tipo === 'pedir_split' || (msg.data?.pedir_split)) {
       return (
         <div key={idx} className="nl-row">
-          <div className="nl-msg-avatar">🍏</div>
+          <div className="nl-msg-avatar"><img src="/brand/logo-mark.webp" alt="" /></div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {msg.text && (
               <div className="nl-bubble nl-bot"
@@ -751,7 +777,7 @@ const Asistente = () => {
       const d = msg.data;
       return (
         <div key={idx} className="nl-row">
-          <div className="nl-msg-avatar">🍏</div>
+          <div className="nl-msg-avatar"><img src="/brand/logo-mark.webp" alt="" /></div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div className="nl-bubble nl-bot"
               dangerouslySetInnerHTML={{ __html: formatText(msg.text) }} />
@@ -773,7 +799,7 @@ const Asistente = () => {
     // ── Burbuja de texto normal ──
     return (
       <div key={idx} className="nl-row">
-        <div className="nl-msg-avatar">🍏</div>
+        <div className="nl-msg-avatar"><img src="/brand/logo-mark.webp" alt="" /></div>
         <div className="nl-bubble nl-bot"
           dangerouslySetInnerHTML={{ __html: formatText(msg.text) }} />
       </div>
@@ -788,17 +814,17 @@ const Asistente = () => {
       {/* ── HEADER ── */}
       <div className="nl-header">
         <div className="nl-header-left">
-          <div className="nl-avatar">🍏</div>
+          <div className="nl-avatar"><img src="/brand/logo-mark.webp" alt="" /></div>
           <div>
             <div className="nl-header-title">Asistente NutriLife</div>
             <div className="nl-header-sub">
               <span className="nl-dot" />
-              Activo · NutriLife v2
+              En línea
             </div>
           </div>
         </div>
         <button className="nl-clear-btn" onClick={limpiarChat} title="Nueva conversación">
-          🗑️ Nueva sesión
+          <Trash2 size={14} /> Nueva conversación
         </button>
       </div>
 
@@ -811,7 +837,7 @@ const Asistente = () => {
             onClick={() => sendMessage(chip.msg)}
             disabled={loading}
           >
-            {chip.label}
+            <chip.icon size={14} /> {chip.label}
           </button>
         ))}
       </div>
@@ -824,7 +850,7 @@ const Asistente = () => {
 
         {loading && (
           <div className="nl-row">
-            <div className="nl-msg-avatar">🍏</div>
+            <div className="nl-msg-avatar"><img src="/brand/logo-mark.webp" alt="" /></div>
             <div className="nl-typing">
               <div className="nl-typing-dot" />
               <div className="nl-typing-dot" />
@@ -854,9 +880,10 @@ const Asistente = () => {
           disabled={loading || !input.trim()}
           aria-label="Enviar mensaje"
         >
-          ➤
+          <Send size={17} />
         </button>
       </div>
+      <div className="nl-disclaimer">Las respuestas son orientativas y no sustituyen la consulta con un profesional de la salud.</div>
 
     </div>
   );

@@ -1,176 +1,418 @@
 import { useState, useEffect, useCallback } from 'react';
+import {
+  House, Bot, ChartColumn, Salad, ShieldCheck, LogOut, Moon, Sun, Menu, X, Scale, Flame, Dumbbell, CalendarCheck,
+  Target, Gauge, ArrowRight, TriangleAlert, Sparkles, Loader2, TrendingUp, TrendingDown, Minus, Activity,
+} from 'lucide-react';
 import Asistente from './Asistente';
 import MisGraficas from './MisGraficas';
 import PlanDiario from './PlanDiario';
+import { Logo, PulseLine, MedicalNote } from '../components/Brand';
 
-// ─── Contexto de tema ──────────────────────────────────────────────
+// ─── Tema ──────────────────────────────────────────────────────────
 const initTheme = () => {
   const saved = localStorage.getItem('nl_theme');
   if (saved) return saved;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
 
-// ─── Skeleton loader ───────────────────────────────────────────────
-const Skeleton = ({ w = '100%', h = '1rem', rounded = 'rounded-lg', className = '' }) => (
-  <div
-    className={`animate-pulse bg-gray-200 dark:bg-gray-700 ${rounded} ${className}`}
-    style={{ width: w, height: h }}
-  />
+const NAV = [
+  { id: 'inicio',   icon: House,       label: 'Inicio',        desc: 'Resumen de tu progreso' },
+  { id: 'chat',     icon: Bot,         label: 'Asistente IA',  desc: 'Tu rutina, tu dieta y tus dudas' },
+  { id: 'graficas', icon: ChartColumn, label: 'Mis gráficas',  desc: 'Calorías, macros y constancia' },
+  { id: 'plan',     icon: Salad,       label: 'Plan diario',   desc: 'Tus objetivos de hoy' },
+];
+const NAV_ADMIN = { id: 'admin', icon: ShieldCheck, label: 'Administración', desc: 'Gestión del sistema' };
+
+// ─── Piezas de UI ──────────────────────────────────────────────────
+const Skeleton = ({ className = '' }) => (
+  <div className={`animate-pulse rounded-lg bg-ink-100 dark:bg-white/10 ${className}`} />
 );
 
-// ─── Stat Card ─────────────────────────────────────────────────────
-const StatCard = ({ icon, label, value, unit, color, loading }) => (
-  <div className={`
-    relative overflow-hidden rounded-2xl p-5
-    bg-white/60 dark:bg-gray-800/60 backdrop-blur-md
-    border border-white/30 dark:border-gray-700/50
-    shadow-lg hover:shadow-xl hover:-translate-y-0.5
-    transition-all duration-200
-  `}>
-    <div className={`absolute top-0 right-0 w-20 h-20 rounded-full -mr-6 -mt-6 opacity-10 ${color}`} />
-    <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${color} bg-opacity-15 mb-3`}>
-      <span className="text-xl">{icon}</span>
-    </div>
-    {loading ? (
-      <>
-        <Skeleton h="1.5rem" w="60%" className="mb-1" />
-        <Skeleton h="0.875rem" w="40%" />
-      </>
-    ) : (
-      <>
-        <div className="text-2xl font-bold text-gray-800 dark:text-white">
-          {value ?? '—'} <span className="text-sm font-normal text-gray-500 dark:text-gray-400">{unit}</span>
-        </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{label}</div>
-      </>
-    )}
-  </div>
-);
-
-// ─── Nav item ──────────────────────────────────────────────────────
-const NavItem = ({ icon, label, active, onClick, badge }) => (
-  <button
-    onClick={onClick}
-    className={`
-      w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
-      transition-all duration-150 group relative
-      ${active
-        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
-        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'}
-    `}
-  >
-    <span className="text-lg">{icon}</span>
-    <span className="flex-1 text-left">{label}</span>
-    {badge && (
-      <span className="w-5 h-5 text-xs rounded-full bg-red-500 text-white flex items-center justify-center">
-        {badge}
-      </span>
-    )}
-    {active && (
-      <span className="absolute right-3 w-1.5 h-1.5 rounded-full bg-white/80 animate-pulse" />
-    )}
-  </button>
-);
-
-// ─── Avatar / Initials ─────────────────────────────────────────────
-const Avatar = ({ name, size = 'md' }) => {
-  const initials = (name || 'U').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
-  const sizes = { sm: 'w-8 h-8 text-xs', md: 'w-10 h-10 text-sm', lg: 'w-12 h-12 text-base' };
+const Avatar = ({ name, className = 'h-10 w-10 text-sm' }) => {
+  const initials = (name || 'U').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
   return (
-    <div className={`${sizes[size]} rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white font-bold flex-shrink-0`}>
+    <div className={`${className} flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 font-semibold text-white`}>
       {initials}
     </div>
   );
 };
 
-// ─── Barra de progreso ─────────────────────────────────────────────
-const ProgressBar = ({ value, max, color = 'bg-emerald-500', label }) => {
-  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+const ThemeToggle = ({ theme, onToggle }) => (
+  <button onClick={onToggle} className="btn-ghost h-10 w-10 p-0" aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
+    title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
+    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+  </button>
+);
+
+const NavItem = ({ item, active, onClick }) => {
+  const Icon = item.icon;
   return (
-    <div>
-      {label && <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex justify-between">
-        <span>{label}</span><span>{Math.round(pct)}%</span>
-      </div>}
-      <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-        <div
-          className={`h-full ${color} rounded-full transition-all duration-700 ease-out`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
+    <button onClick={onClick} aria-current={active ? 'page' : undefined}
+      className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+        active
+          ? 'bg-brand-600 text-white shadow-[0_8px_20px_-10px_rgb(24_122_79/0.8)]'
+          : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900 dark:text-ink-300 dark:hover:bg-white/5 dark:hover:text-white'
+      }`}>
+      <Icon size={19} strokeWidth={active ? 2.2 : 1.9} className={active ? '' : 'text-ink-400 group-hover:text-brand-600 dark:group-hover:text-brand-400'} />
+      <span className="flex-1 text-left">{item.label}</span>
+    </button>
   );
 };
 
-// ─── Mini Heatmap 30 días ──────────────────────────────────────────
-const MiniHeatmap = ({ fechas = [] }) => {
-  const fechasSet = new Set(fechas);
-  const days = [];
+function Sidebar({ open, onClose, vista, onNavigate, userName, userRol, onLogout }) {
+  return (
+    <>
+      {open && <div className="fixed inset-0 z-30 bg-ink-950/40 backdrop-blur-sm lg:hidden" onClick={onClose} />}
+      <aside className={`fixed inset-y-0 left-0 z-40 flex w-[264px] flex-col border-r border-ink-100 bg-white transition-transform duration-300
+        dark:border-white/[0.06] dark:bg-ink-900 lg:static lg:translate-x-0 ${open ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
+        <div className="flex items-center justify-between px-5 pb-4 pt-5">
+          <Logo className="h-11" />
+          <button onClick={onClose} className="btn-ghost p-2 lg:hidden" aria-label="Cerrar menú"><X size={18} /></button>
+        </div>
+
+        <nav className="scroll-thin flex-1 space-y-1 overflow-y-auto px-3 py-2" aria-label="Navegación principal">
+          <p className="eyebrow px-3 pb-2 pt-1">Mi espacio</p>
+          {NAV.map(item => (
+            <NavItem key={item.id} item={item} active={vista === item.id} onClick={() => onNavigate(item.id)} />
+          ))}
+          {userRol === 'admin' && (
+            <>
+              <p className="eyebrow px-3 pb-2 pt-5">Gestión</p>
+              <NavItem item={NAV_ADMIN} active={vista === 'admin'} onClick={() => onNavigate('admin')} />
+            </>
+          )}
+        </nav>
+
+        <div className="border-t border-ink-100 p-3 dark:border-white/[0.06]">
+          <div className="flex items-center gap-3 rounded-xl p-2.5">
+            <Avatar name={userName} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-ink-900 dark:text-white">{userName}</p>
+              <p className="text-xs capitalize text-ink-400">{userRol === 'admin' ? 'Administrador' : 'Usuario'}</p>
+            </div>
+            <button onClick={onLogout} title="Cerrar sesión" aria-label="Cerrar sesión"
+              className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10">
+              <LogOut size={18} />
+            </button>
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+const ACENTOS = {
+  blue:   'bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400',
+  amber:  'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
+  violet: 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400',
+  brand:  'bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400',
+};
+
+const StatCard = ({ icon: Icon, label, value, unit, acento, loading }) => (
+  <div className="card card-hover p-5">
+    <div className="flex items-center justify-between">
+      <span className={`icon-tile ${ACENTOS[acento]}`}><Icon size={20} /></span>
+    </div>
+    {loading ? (
+      <div className="mt-4 space-y-2"><Skeleton className="h-7 w-2/3" /><Skeleton className="h-3.5 w-1/2" /></div>
+    ) : (
+      <>
+        <p className="mt-4 text-[26px] font-bold leading-none tracking-tight text-ink-900 tabular-nums dark:text-white">
+          {value ?? '—'} <span className="text-sm font-medium text-ink-400">{value != null ? unit : ''}</span>
+        </p>
+        <p className="mt-1.5 text-[13px] text-ink-500 dark:text-ink-400">{label}</p>
+      </>
+    )}
+  </div>
+);
+
+const ProgressRing = ({ value, max }) => {
+  const pct = max > 0 ? Math.min(value / max, 1) : 0;
+  const r = 42, circ = 2 * Math.PI * r;
+  return (
+    <svg viewBox="0 0 100 100" className="h-28 w-28 -rotate-90">
+      <circle cx="50" cy="50" r={r} className="stroke-ink-100 dark:stroke-white/10" strokeWidth="9" fill="none" />
+      <circle cx="50" cy="50" r={r} className="stroke-brand-500 transition-all duration-700" strokeWidth="9" fill="none"
+        strokeLinecap="round" strokeDasharray={`${pct * circ} ${circ}`} />
+    </svg>
+  );
+};
+
+const OBJETIVOS = {
+  perder_peso: 'Perder peso', ganar_musculo: 'Ganar músculo', mantenimiento: 'Mantenimiento',
+  'perder grasa': 'Perder grasa', 'ganar masa': 'Ganar masa muscular', mantener: 'Mantenimiento',
+};
+
+// ─── Progreso: peso inicial → actual y entrenamientos de los últimos 30 días ──
+const claveLocal = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+function MiniHeatmap({ fechas = [] }) {
+  const set = new Set(fechas.map(f => String(f).slice(0, 10)));
+  const hoy = new Date();
+  const dias = [];
   for (let i = 29; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const iso = d.toISOString().split('T')[0];
-    days.push({ iso, day: d.getDate(), month: d.getMonth() });
+    const d = new Date(hoy);
+    d.setDate(hoy.getDate() - i);
+    dias.push(d);
   }
-  const weeks = [];
-  for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
-  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const inicio = dias[0].toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+  return (
+    <div>
+      <div className="grid grid-cols-[repeat(15,minmax(0,1fr))] gap-1.5">
+        {dias.map((d, i) => {
+          const k = claveLocal(d);
+          const activo = set.has(k);
+          return (
+            <div key={k} title={`${d.toLocaleDateString('es-MX')}${activo ? ' · entrenamiento' : ''}`}
+              className={`aspect-square rounded-[5px] ${activo ? 'bg-brand-500' : 'bg-ink-100 dark:bg-white/[0.07]'} ${
+                i === 29 ? 'ring-2 ring-brand-300 ring-offset-1 ring-offset-white dark:ring-offset-ink-900' : ''}`} />
+          );
+        })}
+      </div>
+      <div className="mt-1.5 flex justify-between text-[10px] text-ink-400">
+        <span>{inicio}</span><span>Hoy</span>
+      </div>
+    </div>
+  );
+}
+
+function ProgresoCard({ progreso, loading, objetivo, racha }) {
+  const tienePeso = progreso?.peso_inicial != null && progreso?.peso_actual != null;
+  const delta = tienePeso ? Number((progreso.peso_actual - progreso.peso_inicial).toFixed(1)) : 0;
+  const ganar = objetivo === 'ganar_musculo';
+  const favorable = delta === 0 ? null : ganar ? delta > 0 : delta < 0;
+  const tono = favorable == null ? 'text-ink-500 bg-ink-50 dark:bg-white/5'
+    : favorable ? 'text-brand-700 bg-brand-50 dark:text-brand-300 dark:bg-brand-500/10'
+    : 'text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/10';
+  const TrendIcon = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
+  const mensaje = delta === 0 ? 'Sin cambio aún'
+    : ganar ? (delta > 0 ? 'Ganando masa' : 'Por debajo del inicio')
+    : (delta < 0 ? 'Bajando de peso' : 'Subiendo de peso');
+
+  const fechas = progreso?.fechas_30dias ?? [];
+  const hoy = new Date();
+  const diasMes = fechas.filter(f => {
+    const d = new Date(`${String(f).slice(0, 10)}T00:00:00`);
+    return d.getMonth() === hoy.getMonth() && d.getFullYear() === hoy.getFullYear();
+  }).length;
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex gap-1">
-        {weeks.map((week, wi) => (
-          <div key={wi} className="flex flex-col gap-1">
-            {week.map(({ iso }) => {
-              const entrenado = fechasSet.has(iso);
-              const isToday = iso === new Date().toISOString().split('T')[0];
+    <section className="card p-5 sm:p-6">
+      <div className="flex items-center gap-2">
+        <Activity size={16} className="text-brand-600 dark:text-brand-400" />
+        <p className="eyebrow">Tu progreso</p>
+      </div>
+
+      {loading ? (
+        <div className="mt-4 grid gap-6 lg:grid-cols-2">
+          <Skeleton className="h-20 w-full" /><Skeleton className="h-20 w-full" />
+        </div>
+      ) : (
+        <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_1.4fr] lg:divide-x lg:divide-ink-100 dark:lg:divide-white/[0.06]">
+          {/* Peso */}
+          <div className="lg:pr-6">
+            <p className="text-xs text-ink-400">Peso inicial → actual</p>
+            {tienePeso ? (
+              <>
+                <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="text-sm text-ink-400 line-through tabular-nums">{progreso.peso_inicial} kg</span>
+                  <span className="text-[28px] font-bold leading-none tracking-tight text-ink-900 tabular-nums dark:text-white">{progreso.peso_actual} kg</span>
+                </div>
+                <span className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${tono}`}>
+                  <TrendIcon size={14} />
+                  {delta > 0 ? '+' : ''}{delta} kg · {mensaje}
+                </span>
+                {progreso.fecha_inicial && (
+                  <p className="mt-2 text-xs text-ink-400">
+                    Desde el {new Date(progreso.fecha_inicial).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-ink-500">Aún no hay registros de peso. Puedes registrarlo con el asistente.</p>
+            )}
+          </div>
+
+          {/* Entrenamientos */}
+          <div className="lg:pl-6">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs text-ink-400">Entrenamientos · últimos 30 días</p>
+              <span className="chip-brand">{fechas.length} días</span>
+            </div>
+            <MiniHeatmap fechas={fechas} />
+            <div className="mt-4 grid grid-cols-3 gap-2 border-t border-ink-100 pt-4 dark:border-white/[0.06]">
+              {[
+                [racha ?? 0, 'racha activa'],
+                [diasMes, 'días este mes'],
+                [fechas.length, 'últimos 30 días'],
+              ].map(([v, l]) => (
+                <div key={l}>
+                  <p className="text-lg font-bold text-ink-900 tabular-nums dark:text-white">{v}</p>
+                  <p className="text-[11px] text-ink-400">{l}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function VistaInicio({ userName, stats, loading, onNavigate, progreso, loadingProgreso }) {
+  const objetivo = stats?.objetivo_actual;
+  const objetivoLabel = OBJETIVOS[objetivo] || (objetivo ? objetivo.replace(/_/g, ' ') : 'Sin definir');
+  const sesiones = Number(stats?.entrenamientos_mes) || 0;
+
+  const STATS = [
+    { icon: Scale,         label: 'Peso actual',             value: stats?.peso,               unit: 'kg',       acento: 'blue'   },
+    { icon: Flame,         label: 'Meta calórica diaria',    value: stats?.meta_calorica != null ? Math.round(stats.meta_calorica).toLocaleString('es-MX') : null, unit: 'kcal', acento: 'amber' },
+    { icon: Dumbbell,      label: 'Entrenamientos este mes', value: stats?.entrenamientos_mes, unit: 'sesiones', acento: 'violet' },
+    { icon: CalendarCheck, label: 'Racha activa',            value: stats?.racha_dias,         unit: 'días',     acento: 'brand'  },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Bienvenida */}
+      <section className="card relative overflow-hidden p-6 sm:p-7">
+        <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="eyebrow">{new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink-900 sm:text-[28px] dark:text-white">
+              Hola, {userName.split(' ')[0]}
+            </h1>
+            <p className="muted mt-1 max-w-md">Este es el resumen de tu alimentación y entrenamiento. Pide tu plan del día al asistente cuando lo necesites.</p>
+          </div>
+          <button onClick={() => onNavigate('chat')} className="btn-primary btn-lg shrink-0">
+            <Sparkles size={18} /> Hablar con el asistente
+          </button>
+        </div>
+        <PulseLine className="pointer-events-none absolute -right-6 bottom-3 h-16 w-[420px] text-brand-500/15" animated={false} />
+      </section>
+
+      {/* Aviso de triaje */}
+      {!loading && stats && !stats.triaje_completado && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
+          <TriangleAlert size={20} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div>
+            <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">Completa tu evaluación de salud</p>
+            <p className="text-[13px] text-amber-800/80 dark:text-amber-300/80">La necesitamos para personalizar tu plan nutricional y de ejercicio.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Indicadores */}
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        {STATS.map(s => <StatCard key={s.label} {...s} loading={loading} />)}
+      </div>
+
+      <ProgresoCard progreso={progreso} loading={loadingProgreso} objetivo={objetivo} racha={stats?.racha_dias} />
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Perfil de objetivo */}
+        <div className="card p-5 lg:col-span-1">
+          <p className="eyebrow">Tu perfil</p>
+          <div className="mt-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <span className={`icon-tile ${ACENTOS.brand}`}><Target size={20} /></span>
+              <div>
+                <p className="text-xs text-ink-400">Objetivo</p>
+                {loading ? <Skeleton className="mt-1 h-5 w-32" /> : <p className="font-semibold capitalize text-ink-900 dark:text-white">{objetivoLabel}</p>}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className={`icon-tile ${ACENTOS.blue}`}><Gauge size={20} /></span>
+              <div>
+                <p className="text-xs text-ink-400">Nivel de actividad</p>
+                {loading ? <Skeleton className="mt-1 h-5 w-24" /> : (
+                  <p className="font-semibold capitalize text-ink-900 dark:text-white">{stats?.nivel_actividad?.replace(/_/g, ' ') || 'Sin definir'}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Progreso del mes */}
+        <div className="card flex items-center gap-5 p-5 lg:col-span-1">
+          <div className="relative">
+            <ProgressRing value={sesiones} max={20} />
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-xl font-bold text-ink-900 tabular-nums dark:text-white">{loading ? '–' : sesiones}</span>
+              <span className="text-[10px] text-ink-400">de 20</span>
+            </div>
+          </div>
+          <div>
+            <p className="eyebrow">Progreso del mes</p>
+            <p className="mt-2 text-sm text-ink-600 dark:text-ink-300">
+              {sesiones >= 20 ? '¡Meta mensual cumplida!' : `Te faltan ${Math.max(20 - sesiones, 0)} sesiones para tu meta de 20 entrenamientos.`}
+            </p>
+          </div>
+        </div>
+
+        {/* Accesos rápidos */}
+        <div className="card p-5 lg:col-span-1">
+          <p className="eyebrow">Accesos rápidos</p>
+          <div className="mt-3 divide-y divide-ink-100 dark:divide-white/[0.06]">
+            {NAV.slice(1).map(item => {
+              const Icon = item.icon;
               return (
-                <div
-                  key={iso}
-                  title={`${iso}${entrenado ? ' ✓ Entrenado' : ''}`}
-                  className={`w-5 h-5 rounded-sm transition-all duration-200
-                    ${entrenado ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-gray-100 dark:bg-gray-700'}
-                    ${isToday ? 'ring-2 ring-emerald-400 ring-offset-1 ring-offset-white dark:ring-offset-gray-800' : ''}`}
-                />
+                <button key={item.id} onClick={() => onNavigate(item.id)}
+                  className="group flex w-full items-center gap-3 py-3 text-left">
+                  <span className="icon-tile h-9 w-9 bg-ink-50 text-ink-500 transition-colors group-hover:bg-brand-50 group-hover:text-brand-600 dark:bg-white/5 dark:group-hover:bg-brand-500/10">
+                    <Icon size={18} />
+                  </span>
+                  <span className="flex-1">
+                    <span className="block text-sm font-semibold text-ink-800 dark:text-ink-100">{item.label}</span>
+                    <span className="block text-xs text-ink-400">{item.desc}</span>
+                  </span>
+                  <ArrowRight size={16} className="text-ink-300 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-600" />
+                </button>
               );
             })}
           </div>
-        ))}
+        </div>
       </div>
-      <div className="flex justify-between mt-1">
-        <span className="text-[10px] text-gray-400">{meses[days[0].month]} {days[0].day}</span>
-        <span className="text-[10px] text-gray-400">Hoy</span>
-      </div>
+
+      <MedicalNote className="pt-2 text-center" />
     </div>
   );
-};
+}
+
+// Carga diferida del panel admin para no incluirlo en el bundle de usuarios normales
+function AdminDashboardLoader() {
+  const [Comp, setComp] = useState(null);
+  useEffect(() => {
+    import('./AdminDashboard').then(m => setComp(() => m.default)).catch(console.error);
+  }, []);
+  if (!Comp) return (
+    <div className="flex h-64 items-center justify-center"><Loader2 size={32} className="animate-spin text-brand-500" /></div>
+  );
+  return <Comp />;
+}
 
 // ════════════════════════════════════════════════════════════════════
 // DASHBOARD PRINCIPAL
 // ════════════════════════════════════════════════════════════════════
 export default function Dashboard({ onLogout }) {
-  const [theme, setTheme]   = useState(initTheme);
-  const [vista, setVista]   = useState('inicio');
-  const [stats, setStats]   = useState(null);
+  const [theme, setTheme]     = useState(initTheme);
+  const [vista, setVista]     = useState('inicio');
+  const [stats, setStats]     = useState(null);
   const [loading, setLoading] = useState(true);
-  const [perfil, setPerfil] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [, setPerfil]         = useState(null);
   const [progreso, setProgreso] = useState(null);
   const [loadingProgreso, setLoadingProgreso] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const userId   = localStorage.getItem('userId');
   const userName = localStorage.getItem('userName') || 'Usuario';
   const userRol  = localStorage.getItem('userRol')  || 'usuario';
 
-  // ── Tema ──────────────────────────────────────────────────────────
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle('dark', theme === 'dark');
+    document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('nl_theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
-
-  // ── Datos ─────────────────────────────────────────────────────────
   const fetchStats = useCallback(async () => {
     if (!userId) return;
     try {
@@ -178,8 +420,8 @@ export default function Dashboard({ onLogout }) {
       const token = localStorage.getItem('token');
       const authHeaders = { Authorization: `Bearer ${token}` };
       const [statsRes, perfilRes] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL}/api/graficas/stats/${userId}`,  { headers: authHeaders }),
-        fetch(`${import.meta.env.VITE_API_URL}/api/auth/perfil/${userId}`,     { headers: authHeaders })
+        fetch(`${import.meta.env.VITE_API_URL}/api/graficas/stats/${userId}`, { headers: authHeaders }),
+        fetch(`${import.meta.env.VITE_API_URL}/api/auth/perfil/${userId}`,    { headers: authHeaders }),
       ]);
       if (statsRes.ok)  setStats(await statsRes.json());
       if (perfilRes.ok) setPerfil(await perfilRes.json());
@@ -196,7 +438,7 @@ export default function Dashboard({ onLogout }) {
       setLoadingProgreso(true);
       const token = localStorage.getItem('token');
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/graficas/progreso/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setProgreso(await res.json());
     } catch (err) {
@@ -208,367 +450,42 @@ export default function Dashboard({ onLogout }) {
 
   useEffect(() => { fetchStats(); fetchProgreso(); }, [fetchStats, fetchProgreso]);
 
-  // ── Cerrar sidebar al cambiar vista en móvil ──────────────────────
-  const navigate = (v) => { setVista(v); setSidebarOpen(false); };
-
-  const NAV = [
-    { id: 'inicio',   icon: '', label: 'Inicio'        },
-    { id: 'chat',     icon: '', label: 'Asistente IA'  },
-    { id: 'graficas', icon: '', label: 'Mis Gráficas'  },
-    { id: 'plan',     icon: '', label: 'Plan Diario'   },
-  ];
-
-  const STAT_CARDS = [
-    { icon: '⚖️',  label: 'Peso actual',          value: stats?.peso,               unit: 'kg',         color: 'bg-blue-500'    },
-    { icon: '🔥',  label: 'Meta calórica diaria',  value: stats?.meta_calorica,      unit: 'kcal',       color: 'bg-orange-500'  },
-    { icon: '💪',  label: 'Entrenamientos este mes',value: stats?.entrenamientos_mes, unit: 'sesiones',   color: 'bg-violet-500'  },
-    { icon: '📅',  label: 'Racha activa',           value: stats?.racha_dias,         unit: 'días',       color: 'bg-emerald-500' },
-  ];
-
-  // ─── Sidebar ────────────────────────────────────────────────────
-  const Sidebar = () => (
-    <>
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-20 bg-black/40 backdrop-blur-sm lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      <aside className={`
-        fixed top-0 left-0 h-full z-30
-        w-64 flex flex-col
-        bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl
-        border-r border-gray-100 dark:border-gray-800
-        shadow-2xl lg:shadow-none
-        transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:static lg:z-auto
-      `}>
-        <div className="flex items-center gap-2.5 px-5 pt-6 pb-4">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow">
-            <span className="text-white text-lg">🌿</span>
-          </div>
-          <span className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-            NutriLife
-          </span>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="ml-auto lg:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-          >✕</button>
-        </div>
-
-        <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
-          {NAV.map(item => (
-            <NavItem
-              key={item.id}
-              icon={item.icon}
-              label={item.label}
-              active={vista === item.id}
-              onClick={() => navigate(item.id)}
-            />
-          ))}
-          {userRol === 'admin' && (
-            <>
-              <div className="my-2 border-t border-gray-100 dark:border-gray-800" />
-              <NavItem
-                icon="🛡️"
-                label="Panel de Admin"
-                active={vista === 'admin'}
-                onClick={() => navigate('admin')}
-              />
-            </>
-          )}
-        </nav>
-
-        <div className="p-3 border-t border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/60">
-            <Avatar name={userName} />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{userName}</p>
-              <p className="text-xs text-gray-400 capitalize">{userRol}</p>
-            </div>
-            <button
-              onClick={onLogout}
-              title="Cerrar sesión"
-              className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </aside>
-    </>
-  );
-
-  // ─── Header móvil ─────────────────────────────────────────────
-  const MobileHeader = () => (
-    <div className="lg:hidden flex items-center gap-3 px-4 py-3
-      bg-white/80 dark:bg-gray-900/80 backdrop-blur-md
-      border-b border-gray-100 dark:border-gray-800 sticky top-0 z-10">
-      <button
-        onClick={() => setSidebarOpen(true)}
-        className="text-gray-500 dark:text-gray-300 hover:text-emerald-600"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
-      <span className="flex-1 text-sm font-semibold text-gray-700 dark:text-white">
-        {NAV.find(n => n.id === vista)?.label ?? 'NutriLife'}
-      </span>
-      <ThemeToggle />
-    </div>
-  );
-
-  // ─── Toggle tema ───────────────────────────────────────────────
-  const ThemeToggle = () => (
-    <button
-      onClick={toggleTheme}
-      className="w-9 h-9 flex items-center justify-center rounded-xl
-        bg-gray-100 dark:bg-gray-700
-        hover:bg-gray-200 dark:hover:bg-gray-600
-        text-gray-600 dark:text-gray-300
-        transition-all duration-150"
-      title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
-    >
-      {theme === 'dark' ? '☀️' : '🌙'}
-    </button>
-  );
-
-  // ─── Vista inicio ───────────────────────────────────────────────
-  const VistaInicio = () => {
-    const objetivo = stats?.objetivo_actual;
-    const objetivoLabel = {
-      perder_peso: '⬇️ Perder peso',
-      ganar_musculo: '💪 Ganar músculo',
-      mantenimiento: '⚖️ Mantenimiento',
-    }[objetivo] || (objetivo || 'Sin definir');
-
-    // Delta de peso
-    const tienePeso = progreso?.peso_inicial != null && progreso?.peso_actual != null;
-    const deltaPeso = tienePeso ? (progreso.peso_actual - progreso.peso_inicial).toFixed(1) : null;
-    const deltaPos  = Number(deltaPeso) > 0;
-    const deltaColor = objetivo === 'ganar_musculo'
-      ? (deltaPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500')
-      : (deltaPos ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400');
-
-    // Días entrenados este mes (del array de los 30 días)
-    const diasMes = progreso?.fechas_30dias?.filter(f => {
-      const d = new Date(f + 'T00:00:00');
-      const hoy = new Date();
-      return d.getMonth() === hoy.getMonth() && d.getFullYear() === hoy.getFullYear();
-    }).length ?? 0;
-
-    return (
-      <div className="space-y-6">
-        {/* Saludo */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-              ¡Hola, {userName.split(' ')[0]}! 👋
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </p>
-          </div>
-          <div className="hidden lg:block">
-            <ThemeToggle />
-          </div>
-        </div>
-
-        {/* Alerta triaje */}
-        {!loading && !stats?.triaje_completado && (
-          <div className="flex items-center gap-3 p-4 rounded-2xl
-            bg-amber-50 dark:bg-amber-900/20
-            border border-amber-200 dark:border-amber-700/50">
-            <span className="text-2xl">⚠️</span>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                Completa tu evaluación de salud
-              </p>
-              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                Para personalizar tu plan nutricional y de ejercicio
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Stats grid */}
-        <div className="grid grid-cols-2 gap-4">
-          {STAT_CARDS.map(card => (
-            <StatCard key={card.label} {...card} loading={loading} />
-          ))}
-        </div>
-
-        {/* Resumen objetivo + nivel */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="rounded-2xl p-5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md border border-white/30 dark:border-gray-700/50 shadow-lg">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Objetivo</p>
-            {loading ? <Skeleton h="1.5rem" w="70%" /> : (
-              <p className="text-lg font-bold text-gray-800 dark:text-white">{objetivoLabel}</p>
-            )}
-          </div>
-          <div className="rounded-2xl p-5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md border border-white/30 dark:border-gray-700/50 shadow-lg">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Nivel de actividad</p>
-            {loading ? <Skeleton h="1.5rem" w="50%" /> : (
-              <p className="text-lg font-bold text-gray-800 dark:text-white capitalize">
-                {stats?.nivel_actividad?.replace(/_/g, ' ') || '—'}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Constancia mes (barra) */}
-        {!loading && stats?.entrenamientos_mes > 0 && (
-          <div className="rounded-2xl p-5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md border border-white/30 dark:border-gray-700/50 shadow-lg">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">Progreso del mes</p>
-            <ProgressBar
-              value={stats.entrenamientos_mes}
-              max={20}
-              label={`${stats.entrenamientos_mes} / 20 sesiones objetivo`}
-            />
-          </div>
-        )}
-
-        {/* ══ SECCIÓN PROGRESO ══ */}
-        <div className="rounded-2xl p-5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md border border-white/30 dark:border-gray-700/50 shadow-lg">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
-            📈 Tu progreso
-          </p>
-
-          {loadingProgreso ? (
-            <div className="space-y-3">
-              <Skeleton h="2rem" w="50%" />
-              <Skeleton h="6rem" w="100%" />
-            </div>
-          ) : (
-            <div className="space-y-5">
-
-              {/* Cambio de peso */}
-              {tienePeso ? (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">Peso inicial → actual</p>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-sm text-gray-400 line-through">{progreso.peso_inicial} kg</span>
-                      <span className="text-xl font-bold text-gray-800 dark:text-white">{progreso.peso_actual} kg</span>
-                    </div>
-                  </div>
-                  <div className={`text-right ${deltaColor}`}>
-                    <div className="text-2xl font-bold">{deltaPos ? '+' : ''}{deltaPeso} kg</div>
-                    <div className="text-xs opacity-75">
-                      {objetivo === 'ganar_musculo'
-                        ? (deltaPos ? '¡Ganando masa!' : 'Sin cambio aún')
-                        : (Number(deltaPeso) < 0 ? '¡Bajando peso!' : Number(deltaPeso) > 0 ? 'Subiendo peso' : 'Sin cambio')}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-400 italic">
-                  Sin registros de peso aún. Registra tu peso con el asistente.
-                </p>
-              )}
-
-              {/* Heatmap */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-400">Entrenamientos — últimos 30 días</p>
-                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                    {progreso?.fechas_30dias?.length ?? 0} días
-                  </span>
-                </div>
-                <MiniHeatmap fechas={progreso?.fechas_30dias ?? []} />
-              </div>
-
-              {/* Racha + contadores */}
-              <div className="flex items-center gap-4 pt-1 border-t border-gray-100 dark:border-gray-700/50">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">🔥</span>
-                  <div>
-                    <div className="text-lg font-bold text-gray-800 dark:text-white">{stats?.racha_dias ?? 0} días</div>
-                    <div className="text-xs text-gray-400">racha activa</div>
-                  </div>
-                </div>
-                <div className="w-px h-10 bg-gray-100 dark:bg-gray-700" />
-                <div>
-                  <div className="text-lg font-bold text-gray-800 dark:text-white">{diasMes}</div>
-                  <div className="text-xs text-gray-400">días este mes</div>
-                </div>
-                <div className="w-px h-10 bg-gray-100 dark:bg-gray-700" />
-                <div>
-                  <div className="text-lg font-bold text-gray-800 dark:text-white">{progreso?.fechas_30dias?.length ?? 0}</div>
-                  <div className="text-xs text-gray-400">últimos 30 días</div>
-                </div>
-              </div>
-
-            </div>
-          )}
-        </div>
-
-        {/* Accesos rápidos */}
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Accesos rápidos</p>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { icon: '🤖', label: 'Chat IA', view: 'chat', color: 'from-violet-400 to-purple-600' },
-              { icon: '📊', label: 'Gráficas', view: 'graficas', color: 'from-blue-400 to-cyan-600' },
-              { icon: '🥗', label: 'Mi Plan', view: 'plan', color: 'from-emerald-400 to-teal-600' },
-            ].map(item => (
-              <button
-                key={item.view}
-                onClick={() => setVista(item.view)}
-                className="flex flex-col items-center gap-2 p-4 rounded-2xl
-                  bg-white/60 dark:bg-gray-800/60 backdrop-blur-md
-                  border border-white/30 dark:border-gray-700/50
-                  hover:shadow-lg hover:-translate-y-0.5
-                  transition-all duration-150"
-              >
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center shadow text-lg`}>
-                  {item.icon}
-                </div>
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+  const navigate = (v) => {
+    setVista(v);
+    setSidebarOpen(false);
+    if (v === 'inicio') { fetchStats(); fetchProgreso(); }
   };
 
-  // ─── Render ────────────────────────────────────────────────────
+  const actual = vista === 'admin' ? NAV_ADMIN : NAV.find(n => n.id === vista);
+  const esChat = vista === 'chat';
+
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-emerald-50 via-teal-50/50 to-cyan-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex">
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <MobileHeader />
-        <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
-          {vista === 'inicio'   && <VistaInicio />}
-          {vista === 'chat'     && <Asistente />}
-          {vista === 'graficas' && <MisGraficas />}
-          {vista === 'plan'     && <PlanDiario />}
-          {vista === 'admin'    && userRol === 'admin' && (
-            <AdminDashboardLoader />
-          )}
+    <div className="flex h-dvh overflow-hidden bg-ink-50 dark:bg-ink-950">
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} vista={vista} onNavigate={navigate}
+        userName={userName} userRol={userRol} onLogout={onLogout} />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Encabezado */}
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-ink-100 bg-white/80 px-4 backdrop-blur-md dark:border-white/[0.06] dark:bg-ink-900/80 lg:px-8">
+          <button onClick={() => setSidebarOpen(true)} className="btn-ghost -ml-2 p-2 lg:hidden" aria-label="Abrir menú"><Menu size={20} /></button>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-[15px] font-semibold text-ink-900 dark:text-white">{actual?.label}</h2>
+            <p className="hidden truncate text-xs text-ink-400 sm:block">{actual?.desc}</p>
+          </div>
+          <ThemeToggle theme={theme} onToggle={() => setTheme(t => (t === 'dark' ? 'light' : 'dark'))} />
+          <div className="hidden sm:block"><Avatar name={userName} className="h-9 w-9 text-xs" /></div>
+        </header>
+
+        <main className={`flex-1 ${esChat ? 'overflow-hidden p-3 sm:p-5 lg:p-6' : 'scroll-thin overflow-y-auto p-4 sm:p-6 lg:p-8'}`}>
+          <div key={vista} className={`mx-auto w-full max-w-6xl animate-fade-up ${esChat ? 'h-full' : ''}`}>
+            {vista === 'inicio'   && <VistaInicio userName={userName} stats={stats} loading={loading} onNavigate={navigate} progreso={progreso} loadingProgreso={loadingProgreso} />}
+            {vista === 'chat'     && <Asistente />}
+            {vista === 'graficas' && <MisGraficas />}
+            {vista === 'plan'     && <PlanDiario />}
+            {vista === 'admin'    && userRol === 'admin' && <AdminDashboardLoader />}
+          </div>
         </main>
       </div>
     </div>
   );
-}
-
-// Lazy-load del panel admin
-function AdminDashboardLoader() {
-  const [Comp, setComp] = useState(null);
-  useEffect(() => {
-    import('./AdminDashboard').then(m => setComp(() => m.default)).catch(console.error);
-  }, []);
-  if (!Comp) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
-  return <Comp />;
 }
