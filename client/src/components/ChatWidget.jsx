@@ -4,7 +4,7 @@ import axios from 'axios';
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { text: "¡Hola! Soy tu asistente de NutriLife. ¿En qué puedo ayudarte hoy?", sender: 'bot' }
+    { text: "¡Hola! 👋 Soy tu asistente de NutriLife. ¿En qué puedo ayudarte hoy?", sender: 'bot' }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);

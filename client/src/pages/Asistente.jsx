@@ -613,11 +613,12 @@ const Asistente = () => {
     inputRef.current?.focus();
 
     try {
+      const token = localStorage.getItem('token');
       const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/chatbot/message`, {
-        message: msg,
-        userId,
-        historial,
-      });
+      message: msg,
+      userId,
+      historial,
+    }, { headers: { Authorization: `Bearer ${token}` } });
 
       const { reply, tipo, data } = res.data;
 

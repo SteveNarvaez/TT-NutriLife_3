@@ -376,7 +376,7 @@ const Triaje = ({ modoModal = false, onCompletado, onCerrar }) => {
             <button onClick={() => window.close()} className="mt-3 text-sm text-green-600 underline">
               Cerrar ventana
             </button>
-          )}
+          )} 
         </div>
       </div>
     );

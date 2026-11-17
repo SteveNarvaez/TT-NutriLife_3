@@ -55,7 +55,7 @@ const Login = () => {
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
       <div className="bg-white p-10 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-800">Hola de nuevo 🍏</h2>
+          <h2 className="text-3xl font-extrabold text-gray-800">Hola de nuevo </h2>
           <p className="text-gray-500 mt-2">Ingresa a tu cuenta de NutriLife</p>
         </div>
 

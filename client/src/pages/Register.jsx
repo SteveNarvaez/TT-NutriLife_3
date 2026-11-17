@@ -2,49 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
-// ── Pantalla que aparece DESPUÉS del registro exitoso ──
-const PantallaVerificacion = ({ email, onReenviar, reenviando, mensajeReenvio }) => (
-  <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-6">
-    <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg border border-gray-100 text-center">
-      <div className="text-6xl mb-4">📬</div>
-      <h2 className="text-2xl font-extrabold text-gray-800 mb-2">¡Revisa tu correo!</h2>
-      <p className="text-gray-500 mb-1">
-        Enviamos un enlace de verificación a:
-      </p>
-      <p className="text-green-600 font-bold text-lg mb-6 break-all">{email}</p>
-      <p className="text-gray-400 text-sm mb-8">
-        Haz clic en el botón del correo para activar tu cuenta.<br />
-        El enlace expira en <strong>24 horas</strong>.
-      </p>
-
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-left">
-        <p className="text-amber-700 text-sm font-semibold mb-1">⚠️ ¿No llegó el correo?</p>
-        <ul className="text-amber-600 text-xs space-y-1 list-disc list-inside">
-          <li>Revisa tu carpeta de <strong>Spam</strong> o Correo no deseado</li>
-          <li>Puede tardar hasta 2 minutos en llegar</li>
-          <li>Verifica que el correo esté escrito correctamente</li>
-        </ul>
-      </div>
-
-      {mensajeReenvio && (
-        <p className="text-green-600 text-sm font-medium mb-4">{mensajeReenvio}</p>
-      )}
-
-      <button
-        onClick={onReenviar}
-        disabled={reenviando}
-        className="w-full border-2 border-green-500 text-green-600 font-bold p-3 rounded-xl hover:bg-green-50 transition mb-4 disabled:opacity-50"
-      >
-        {reenviando ? 'Enviando...' : '🔁 Reenviar correo de verificación'}
-      </button>
-
-      <Link to="/login" className="text-gray-400 text-sm hover:text-green-600 hover:underline">
-        Ya verifiqué → Iniciar sesión
-      </Link>
-    </div>
-  </div>
-);
-
 // ── Formulario de registro principal ──
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -53,10 +10,6 @@ const Register = () => {
     acepto_disclaimer: false,
   });
   const [triajeCompletado, setTriajeCompletado] = useState(false);
-  const [registrado, setRegistrado]             = useState(false);
-  const [emailRegistrado, setEmailRegistrado]   = useState('');
-  const [reenviando, setRenviando]              = useState(false);
-  const [mensajeReenvio, setMensajeReenvio]     = useState('');
   const navigate = useNavigate();
 
   // Escuchar cuando el triaje se completa
@@ -97,9 +50,8 @@ const Register = () => {
 
       sessionStorage.removeItem('triaje_data');
 
-      // 3. Mostrar pantalla de verificación en lugar de navegar al login
-      setEmailRegistrado(formData.email);
-      setRegistrado(true);
+      // 3. Redirigir al login directamente (sin verificación de correo)
+     navigate('/login', { state: { mensaje: '¡Cuenta creada exitosamente! Inicia sesión.' } });
 
     } catch (err) {
       const mensaje = err.response?.data?.error || 'Error de conexión';
@@ -110,33 +62,6 @@ const Register = () => {
       }
     }
   };
-
-  const handleReenviar = async () => {
-    setRenviando(true);
-    setMensajeReenvio('');
-    try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/reenviar-verificacion`, {
-        email: emailRegistrado,
-      });
-      setMensajeReenvio(res.data.message || 'Correo reenviado. Revisa tu bandeja.');
-    } catch {
-      setMensajeReenvio('Error al reenviar. Intenta de nuevo.');
-    } finally {
-      setRenviando(false);
-    }
-  };
-
-  // Si ya se registró, mostrar pantalla de verificación
-  if (registrado) {
-    return (
-      <PantallaVerificacion
-        email={emailRegistrado}
-        onReenviar={handleReenviar}
-        reenviando={reenviando}
-        mensajeReenvio={mensajeReenvio}
-      />
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-6">
