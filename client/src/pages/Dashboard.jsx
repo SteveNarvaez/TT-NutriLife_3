@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   House, Bot, ChartColumn, Salad, ShieldCheck, LogOut, Moon, Sun, Menu, X, Scale, Flame, Dumbbell, CalendarCheck,
-  Target, Gauge, ArrowRight, TriangleAlert, Sparkles, Loader2,
+  Target, Gauge, ArrowRight, TriangleAlert, Sparkles, Loader2, TrendingUp, TrendingDown, Minus, Activity,
 } from 'lucide-react';
 import Asistente from './Asistente';
 import MisGraficas from './MisGraficas';
@@ -143,7 +143,124 @@ const OBJETIVOS = {
   'perder grasa': 'Perder grasa', 'ganar masa': 'Ganar masa muscular', mantener: 'Mantenimiento',
 };
 
-function VistaInicio({ userName, stats, loading, onNavigate }) {
+// ─── Progreso: peso inicial → actual y entrenamientos de los últimos 30 días ──
+const claveLocal = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+function MiniHeatmap({ fechas = [] }) {
+  const set = new Set(fechas.map(f => String(f).slice(0, 10)));
+  const hoy = new Date();
+  const dias = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(hoy);
+    d.setDate(hoy.getDate() - i);
+    dias.push(d);
+  }
+  const inicio = dias[0].toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+  return (
+    <div>
+      <div className="grid grid-cols-[repeat(15,minmax(0,1fr))] gap-1.5">
+        {dias.map((d, i) => {
+          const k = claveLocal(d);
+          const activo = set.has(k);
+          return (
+            <div key={k} title={`${d.toLocaleDateString('es-MX')}${activo ? ' · entrenamiento' : ''}`}
+              className={`aspect-square rounded-[5px] ${activo ? 'bg-brand-500' : 'bg-ink-100 dark:bg-white/[0.07]'} ${
+                i === 29 ? 'ring-2 ring-brand-300 ring-offset-1 ring-offset-white dark:ring-offset-ink-900' : ''}`} />
+          );
+        })}
+      </div>
+      <div className="mt-1.5 flex justify-between text-[10px] text-ink-400">
+        <span>{inicio}</span><span>Hoy</span>
+      </div>
+    </div>
+  );
+}
+
+function ProgresoCard({ progreso, loading, objetivo, racha }) {
+  const tienePeso = progreso?.peso_inicial != null && progreso?.peso_actual != null;
+  const delta = tienePeso ? Number((progreso.peso_actual - progreso.peso_inicial).toFixed(1)) : 0;
+  const ganar = objetivo === 'ganar_musculo';
+  const favorable = delta === 0 ? null : ganar ? delta > 0 : delta < 0;
+  const tono = favorable == null ? 'text-ink-500 bg-ink-50 dark:bg-white/5'
+    : favorable ? 'text-brand-700 bg-brand-50 dark:text-brand-300 dark:bg-brand-500/10'
+    : 'text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/10';
+  const TrendIcon = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
+  const mensaje = delta === 0 ? 'Sin cambio aún'
+    : ganar ? (delta > 0 ? 'Ganando masa' : 'Por debajo del inicio')
+    : (delta < 0 ? 'Bajando de peso' : 'Subiendo de peso');
+
+  const fechas = progreso?.fechas_30dias ?? [];
+  const hoy = new Date();
+  const diasMes = fechas.filter(f => {
+    const d = new Date(`${String(f).slice(0, 10)}T00:00:00`);
+    return d.getMonth() === hoy.getMonth() && d.getFullYear() === hoy.getFullYear();
+  }).length;
+
+  return (
+    <section className="card p-5 sm:p-6">
+      <div className="flex items-center gap-2">
+        <Activity size={16} className="text-brand-600 dark:text-brand-400" />
+        <p className="eyebrow">Tu progreso</p>
+      </div>
+
+      {loading ? (
+        <div className="mt-4 grid gap-6 lg:grid-cols-2">
+          <Skeleton className="h-20 w-full" /><Skeleton className="h-20 w-full" />
+        </div>
+      ) : (
+        <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_1.4fr] lg:divide-x lg:divide-ink-100 dark:lg:divide-white/[0.06]">
+          {/* Peso */}
+          <div className="lg:pr-6">
+            <p className="text-xs text-ink-400">Peso inicial → actual</p>
+            {tienePeso ? (
+              <>
+                <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="text-sm text-ink-400 line-through tabular-nums">{progreso.peso_inicial} kg</span>
+                  <span className="text-[28px] font-bold leading-none tracking-tight text-ink-900 tabular-nums dark:text-white">{progreso.peso_actual} kg</span>
+                </div>
+                <span className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${tono}`}>
+                  <TrendIcon size={14} />
+                  {delta > 0 ? '+' : ''}{delta} kg · {mensaje}
+                </span>
+                {progreso.fecha_inicial && (
+                  <p className="mt-2 text-xs text-ink-400">
+                    Desde el {new Date(progreso.fecha_inicial).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-ink-500">Aún no hay registros de peso. Puedes registrarlo con el asistente.</p>
+            )}
+          </div>
+
+          {/* Entrenamientos */}
+          <div className="lg:pl-6">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs text-ink-400">Entrenamientos · últimos 30 días</p>
+              <span className="chip-brand">{fechas.length} días</span>
+            </div>
+            <MiniHeatmap fechas={fechas} />
+            <div className="mt-4 grid grid-cols-3 gap-2 border-t border-ink-100 pt-4 dark:border-white/[0.06]">
+              {[
+                [racha ?? 0, 'racha activa'],
+                [diasMes, 'días este mes'],
+                [fechas.length, 'últimos 30 días'],
+              ].map(([v, l]) => (
+                <div key={l}>
+                  <p className="text-lg font-bold text-ink-900 tabular-nums dark:text-white">{v}</p>
+                  <p className="text-[11px] text-ink-400">{l}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function VistaInicio({ userName, stats, loading, onNavigate, progreso, loadingProgreso }) {
   const objetivo = stats?.objetivo_actual;
   const objetivoLabel = OBJETIVOS[objetivo] || (objetivo ? objetivo.replace(/_/g, ' ') : 'Sin definir');
   const sesiones = Number(stats?.entrenamientos_mes) || 0;
@@ -189,6 +306,8 @@ function VistaInicio({ userName, stats, loading, onNavigate }) {
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         {STATS.map(s => <StatCard key={s.label} {...s} loading={loading} />)}
       </div>
+
+      <ProgresoCard progreso={progreso} loading={loadingProgreso} objetivo={objetivo} racha={stats?.racha_dias} />
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Perfil de objetivo */}
@@ -281,6 +400,8 @@ export default function Dashboard({ onLogout }) {
   const [stats, setStats]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [, setPerfil]         = useState(null);
+  const [progreso, setProgreso] = useState(null);
+  const [loadingProgreso, setLoadingProgreso] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const userId   = localStorage.getItem('userId');
@@ -311,12 +432,28 @@ export default function Dashboard({ onLogout }) {
     }
   }, [userId]);
 
-  useEffect(() => { fetchStats(); }, [fetchStats]);
+  const fetchProgreso = useCallback(async () => {
+    if (!userId) return;
+    try {
+      setLoadingProgreso(true);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/graficas/progreso/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setProgreso(await res.json());
+    } catch (err) {
+      console.error('Error cargando progreso:', err);
+    } finally {
+      setLoadingProgreso(false);
+    }
+  }, [userId]);
+
+  useEffect(() => { fetchStats(); fetchProgreso(); }, [fetchStats, fetchProgreso]);
 
   const navigate = (v) => {
     setVista(v);
     setSidebarOpen(false);
-    if (v === 'inicio') fetchStats();
+    if (v === 'inicio') { fetchStats(); fetchProgreso(); }
   };
 
   const actual = vista === 'admin' ? NAV_ADMIN : NAV.find(n => n.id === vista);
@@ -341,7 +478,7 @@ export default function Dashboard({ onLogout }) {
 
         <main className={`flex-1 ${esChat ? 'overflow-hidden p-3 sm:p-5 lg:p-6' : 'scroll-thin overflow-y-auto p-4 sm:p-6 lg:p-8'}`}>
           <div key={vista} className={`mx-auto w-full max-w-6xl animate-fade-up ${esChat ? 'h-full' : ''}`}>
-            {vista === 'inicio'   && <VistaInicio userName={userName} stats={stats} loading={loading} onNavigate={navigate} />}
+            {vista === 'inicio'   && <VistaInicio userName={userName} stats={stats} loading={loading} onNavigate={navigate} progreso={progreso} loadingProgreso={loadingProgreso} />}
             {vista === 'chat'     && <Asistente />}
             {vista === 'graficas' && <MisGraficas />}
             {vista === 'plan'     && <PlanDiario />}
