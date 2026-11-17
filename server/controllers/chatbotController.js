@@ -514,7 +514,7 @@ async function obtenerRutinaHoy({ id_usuario }) {
 // ── 3. obtenerDietaSemana ─────────────────────────────
 // proteina_preferida: string opcional (ej: 'pollo', 'res', 'atún')
 // Solo se usa cuando se genera una dieta NUEVA (no existe aún esta semana)
-async function obtenerDietaSemana({ id_usuario, proteina_preferida }) {
+async function obtenerDietaSemana({ id_usuario, proteina_preferida, alimento_prohibido }) {
   const ahora = new Date();
 
   const startOfYear = new Date(ahora.getFullYear(), 0, 1);
@@ -756,7 +756,47 @@ async function cambiarComidaHoy({ id_usuario, momento_dia, nuevo_alimento_nombre
     mensaje: `¡Listo! Tu ${momento_dia.toLowerCase()} de hoy se cambió a ${alimento.nombre} (~${comidaNueva.kcal} kcal). 🔄`
   };
 }
+// ── 5. detectarAlergias ───────────────────────────────
+// Detecta si el usuario menciona una alergia/intolerancia en el mensaje
+// Retorna el alimento prohibido (string) o null si no hay mención
+function detectarAlergias(mensaje) {
+  if (!mensaje) return null;
+  const texto = mensaje.toLowerCase();
 
+  // Patrones de alergia/intolerancia
+  const patrones = [
+    /soy\s+al[eé]rgico\s+a[l]?\s+(.+)/i,
+    /soy\s+al[eé]rgica\s+a[l]?\s+(.+)/i,
+    /tengo\s+alergia\s+a[l]?\s+(.+)/i,
+    /tengo\s+intolerancia\s+a[l]?\s+(.+)/i,
+    /soy\s+intolerante\s+a[l]?\s+(.+)/i,
+    /no\s+puedo\s+comer\s+(.+)/i,
+    /no\s+como\s+(.+)\s+(por|porque|ya\s+que)/i,
+    /me\s+cae\s+mal\s+e[l]?\s+(.+)/i,
+    /me\s+cae\s+mal\s+la\s+(.+)/i,
+    /evito\s+(e[l]?\s+|la\s+|los\s+|las\s+)?(.+)/i,
+    /al[eé]rgico\s+a[l]?\s+(.+)/i,
+    /al[eé]rgica\s+a[l]?\s+(.+)/i,
+    /intolerante\s+a[l]?\s+(.+)/i,
+  ];
+
+  for (const patron of patrones) {
+    const match = texto.match(patron);
+    if (match) {
+      // El alimento está en el último grupo de captura
+      const alimento = match[match.length - 1]
+        .trim()
+        .replace(/[.,!?;].*$/, '')  // Cortar en puntuación
+        .replace(/\s+(y|o|también|tampoco).*$/, '')  // Cortar en conjunciones
+        .trim();
+      if (alimento.length > 1 && alimento.length < 50) {
+        return alimento;
+      }
+    }
+  }
+
+  return null;
+}
 // ═══════════════════════════════════════════════════
 // 📋 DECLARACIÓN DE TOOLS PARA GEMINI
 // ═══════════════════════════════════════════════════
@@ -891,7 +931,8 @@ const tools = [{
         type: 'OBJECT',
         properties: {
           id_usuario: { type: 'INTEGER', description: 'ID del usuario' },
-          proteina_preferida: { type: 'STRING', description: 'Proteína preferida por el usuario para comida y cena esta semana (ej: pollo, res, atún). Opcional — omitir si el usuario no tiene preferencia.' }
+          proteina_preferida: { type: 'STRING', description: 'Proteína preferida por el usuario para comida y cena esta semana (ej: pollo, res, atún). Opcional — omitir si el usuario no tiene preferencia.' },
+          alimento_prohibido: { type: 'STRING', description: 'Alimento que el usuario NO puede consumir por alergia o intolerancia. Pasar automáticamente si fue detectado en la conversación.' }
         },
         required: ['id_usuario']
       }
@@ -971,6 +1012,8 @@ async function llamarGeminiConReintento(payload, intentos = 3, espera = 1500) {
 const enviarMensaje = async (req, res) => {
   try {
     const { message, historial = [] } = req.body;
+    // ── Detección de alergias en tiempo real ──────────────
+    const alimentoProhibido = detectarAlergias(message);  
     const userId = req.user.id;
 
     const perfilExiste = await pool.query(
@@ -1108,7 +1151,16 @@ CONTEXTO DE SESIÓN:
 - ¿Es nuevo usuario sin evaluación?: ${esNuevoUsuario}
 - NUNCA le pidas al usuario su ID. Ya lo tienes. Úsalo directamente en las funciones.
 - Si es nuevo usuario, guíalo para completar su evaluación con guardarEvaluacion().
-- Responde siempre en español, de forma amigable y motivadora. Usa emojis con moderación.`;
+- Responde siempre en español, de forma amigable y motivadora. Usa emojis con moderación.${
+  alimentoProhibido
+    ? `\n\nALERGIA DETECTADA — RESTRICCIÓN OBLIGATORIA:
+- El usuario mencionó que NO puede consumir: "${alimentoProhibido}"
+- NUNCA incluyas "${alimentoProhibido}" ni alimentos que lo contengan en ningún plan, sugerencia o respuesta.
+- Si su dieta semanal ya incluye "${alimentoProhibido}", indícale que puedes cambiarlo con cambiarComidaHoy() y pregúntale por qué momento del día quiere el cambio.
+- Sugiere siempre una alternativa del mismo grupo nutricional (ej: si no puede huevo → queso cottage o pavo; si no puede leche → bebida de soya; si no puede pollo → atún o res).
+- Aplica esta restricción en TODAS las respuestas de esta conversación.`
+    : ''
+}`;
 
     const mensajes = [
       ...historial,
