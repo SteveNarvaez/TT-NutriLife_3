@@ -28,7 +28,7 @@ app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/triaje',  triajeRoutes);
 app.use('/api/admin',   adminRoutes);
 
-// 👇 AQUÍ AGREGAMOS LA NUEVA RUTA PARA LAS GRÁFICAS 👇
+// AQUÍ AGREGAMOS LA NUEVA RUTA PARA LAS GRÁFICAS 
 app.get('/api/graficas/peso/:id_usuario', async (req, res) => {
     try {
         const { id_usuario } = req.params;
@@ -437,6 +437,45 @@ app.get('/api/debug/:id_usuario', async (req, res) => {
       plan_dieta_semanal:      planSemanal.rows,
     });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── PROGRESO DEL USUARIO (peso + entrenamientos últimos 30 días) ──
+app.get('/api/graficas/progreso/:id_usuario', async (req, res) => {
+  try {
+    const { id_usuario } = req.params;
+
+    const [pesoRes, fechasRes] = await Promise.all([
+      // Peso inicial y actual desde historial_medidas
+      pool.query(
+        `SELECT peso_kg, fecha_registro
+         FROM historial_medidas
+         WHERE id_usuario = $1
+         ORDER BY fecha_registro ASC`,
+        [id_usuario]
+      ),
+      // Fechas de entrenamiento en los últimos 30 días
+      pool.query(
+        `SELECT DISTINCT DATE(fecha)::text AS fecha
+         FROM progreso_rutinas
+         WHERE id_usuario = $1
+           AND fecha >= NOW() - INTERVAL '30 days'
+         ORDER BY fecha ASC`,
+        [id_usuario]
+      ),
+    ]);
+
+    const medidas = pesoRes.rows;
+
+    res.json({
+      peso_inicial: medidas.length > 0 ? parseFloat(medidas[0].peso_kg) : null,
+      peso_actual:  medidas.length > 0 ? parseFloat(medidas[medidas.length - 1].peso_kg) : null,
+      fecha_inicial: medidas.length > 0 ? medidas[0].fecha_registro : null,
+      fechas_30dias: fechasRes.rows.map(r => r.fecha),
+    });
+  } catch (err) {
+    console.error('❌ Error en /api/graficas/progreso:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

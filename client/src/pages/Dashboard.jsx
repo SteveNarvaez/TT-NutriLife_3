@@ -151,10 +151,10 @@ export default function Dashboard({ onLogout }) {
   const navigate = (v) => { setVista(v); setSidebarOpen(false); };
 
   const NAV = [
-    { id: 'inicio',   icon: '🏠', label: 'Inicio'        },
-    { id: 'chat',     icon: '🤖', label: 'Asistente IA'  },
-    { id: 'graficas', icon: '📊', label: 'Mis Gráficas'  },
-    { id: 'plan',     icon: '🥗', label: 'Plan Diario'   },
+    { id: 'inicio',   icon: '', label: 'Inicio'        },
+    { id: 'chat',     icon: '', label: 'Asistente IA'  },
+    { id: 'graficas', icon: '', label: 'Mis Gráficas'  },
+    { id: 'plan',     icon: '', label: 'Plan Diario'   },
   ];
 
   const STAT_CARDS = [
