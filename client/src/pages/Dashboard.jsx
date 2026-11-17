@@ -101,6 +101,49 @@ const ProgressBar = ({ value, max, color = 'bg-emerald-500', label }) => {
   );
 };
 
+// ─── Mini Heatmap 30 días ──────────────────────────────────────────
+const MiniHeatmap = ({ fechas = [] }) => {
+  const fechasSet = new Set(fechas);
+  const days = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const iso = d.toISOString().split('T')[0];
+    days.push({ iso, day: d.getDate(), month: d.getMonth() });
+  }
+  const weeks = [];
+  for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
+  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex gap-1">
+        {weeks.map((week, wi) => (
+          <div key={wi} className="flex flex-col gap-1">
+            {week.map(({ iso }) => {
+              const entrenado = fechasSet.has(iso);
+              const isToday = iso === new Date().toISOString().split('T')[0];
+              return (
+                <div
+                  key={iso}
+                  title={`${iso}${entrenado ? ' ✓ Entrenado' : ''}`}
+                  className={`w-5 h-5 rounded-sm transition-all duration-200
+                    ${entrenado ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-gray-100 dark:bg-gray-700'}
+                    ${isToday ? 'ring-2 ring-emerald-400 ring-offset-1 ring-offset-white dark:ring-offset-gray-800' : ''}`}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-between mt-1">
+        <span className="text-[10px] text-gray-400">{meses[days[0].month]} {days[0].day}</span>
+        <span className="text-[10px] text-gray-400">Hoy</span>
+      </div>
+    </div>
+  );
+};
+
 // ════════════════════════════════════════════════════════════════════
 // DASHBOARD PRINCIPAL
 // ════════════════════════════════════════════════════════════════════
@@ -111,6 +154,8 @@ export default function Dashboard({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [perfil, setPerfil] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [progreso, setProgreso] = useState(null);
+  const [loadingProgreso, setLoadingProgreso] = useState(true);
 
   const userId   = localStorage.getItem('userId');
   const userName = localStorage.getItem('userName') || 'Usuario';
@@ -133,8 +178,8 @@ export default function Dashboard({ onLogout }) {
       const token = localStorage.getItem('token');
       const authHeaders = { Authorization: `Bearer ${token}` };
       const [statsRes, perfilRes] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL}/api/graficas/stats/${userId}`, { headers: authHeaders }),
-        fetch(`${import.meta.env.VITE_API_URL}/api/auth/perfil/${userId}`,    { headers: authHeaders })
+        fetch(`${import.meta.env.VITE_API_URL}/api/graficas/stats/${userId}`,  { headers: authHeaders }),
+        fetch(`${import.meta.env.VITE_API_URL}/api/auth/perfil/${userId}`,     { headers: authHeaders })
       ]);
       if (statsRes.ok)  setStats(await statsRes.json());
       if (perfilRes.ok) setPerfil(await perfilRes.json());
@@ -145,7 +190,23 @@ export default function Dashboard({ onLogout }) {
     }
   }, [userId]);
 
-  useEffect(() => { fetchStats(); }, [fetchStats]);
+  const fetchProgreso = useCallback(async () => {
+    if (!userId) return;
+    try {
+      setLoadingProgreso(true);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/graficas/progreso/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) setProgreso(await res.json());
+    } catch (err) {
+      console.error('Error cargando progreso:', err);
+    } finally {
+      setLoadingProgreso(false);
+    }
+  }, [userId]);
+
+  useEffect(() => { fetchStats(); fetchProgreso(); }, [fetchStats, fetchProgreso]);
 
   // ── Cerrar sidebar al cambiar vista en móvil ──────────────────────
   const navigate = (v) => { setVista(v); setSidebarOpen(false); };
@@ -167,7 +228,6 @@ export default function Dashboard({ onLogout }) {
   // ─── Sidebar ────────────────────────────────────────────────────
   const Sidebar = () => (
     <>
-      {/* Overlay móvil */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-20 bg-black/40 backdrop-blur-sm lg:hidden"
@@ -185,7 +245,6 @@ export default function Dashboard({ onLogout }) {
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:static lg:z-auto
       `}>
-        {/* Logo */}
         <div className="flex items-center gap-2.5 px-5 pt-6 pb-4">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow">
             <span className="text-white text-lg">🌿</span>
@@ -199,7 +258,6 @@ export default function Dashboard({ onLogout }) {
           >✕</button>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
           {NAV.map(item => (
             <NavItem
@@ -210,8 +268,6 @@ export default function Dashboard({ onLogout }) {
               onClick={() => navigate(item.id)}
             />
           ))}
-
-          {/* Enlace a admin si corresponde */}
           {userRol === 'admin' && (
             <>
               <div className="my-2 border-t border-gray-100 dark:border-gray-800" />
@@ -225,7 +281,6 @@ export default function Dashboard({ onLogout }) {
           )}
         </nav>
 
-        {/* Perfil usuario */}
         <div className="p-3 border-t border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/60">
             <Avatar name={userName} />
@@ -293,6 +348,21 @@ export default function Dashboard({ onLogout }) {
       mantenimiento: '⚖️ Mantenimiento',
     }[objetivo] || (objetivo || 'Sin definir');
 
+    // Delta de peso
+    const tienePeso = progreso?.peso_inicial != null && progreso?.peso_actual != null;
+    const deltaPeso = tienePeso ? (progreso.peso_actual - progreso.peso_inicial).toFixed(1) : null;
+    const deltaPos  = Number(deltaPeso) > 0;
+    const deltaColor = objetivo === 'ganar_musculo'
+      ? (deltaPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500')
+      : (deltaPos ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400');
+
+    // Días entrenados este mes (del array de los 30 días)
+    const diasMes = progreso?.fechas_30dias?.filter(f => {
+      const d = new Date(f + 'T00:00:00');
+      const hoy = new Date();
+      return d.getMonth() === hoy.getMonth() && d.getFullYear() === hoy.getFullYear();
+    }).length ?? 0;
+
     return (
       <div className="space-y-6">
         {/* Saludo */}
@@ -305,7 +375,6 @@ export default function Dashboard({ onLogout }) {
               {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
             </p>
           </div>
-          {/* Theme toggle desktop */}
           <div className="hidden lg:block">
             <ThemeToggle />
           </div>
@@ -337,15 +406,12 @@ export default function Dashboard({ onLogout }) {
 
         {/* Resumen objetivo + nivel */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Objetivo */}
           <div className="rounded-2xl p-5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md border border-white/30 dark:border-gray-700/50 shadow-lg">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Objetivo</p>
             {loading ? <Skeleton h="1.5rem" w="70%" /> : (
               <p className="text-lg font-bold text-gray-800 dark:text-white">{objetivoLabel}</p>
             )}
           </div>
-
-          {/* Nivel actividad */}
           <div className="rounded-2xl p-5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md border border-white/30 dark:border-gray-700/50 shadow-lg">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Nivel de actividad</p>
             {loading ? <Skeleton h="1.5rem" w="50%" /> : (
@@ -367,6 +433,81 @@ export default function Dashboard({ onLogout }) {
             />
           </div>
         )}
+
+        {/* ══ SECCIÓN PROGRESO ══ */}
+        <div className="rounded-2xl p-5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md border border-white/30 dark:border-gray-700/50 shadow-lg">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
+            📈 Tu progreso
+          </p>
+
+          {loadingProgreso ? (
+            <div className="space-y-3">
+              <Skeleton h="2rem" w="50%" />
+              <Skeleton h="6rem" w="100%" />
+            </div>
+          ) : (
+            <div className="space-y-5">
+
+              {/* Cambio de peso */}
+              {tienePeso ? (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Peso inicial → actual</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-sm text-gray-400 line-through">{progreso.peso_inicial} kg</span>
+                      <span className="text-xl font-bold text-gray-800 dark:text-white">{progreso.peso_actual} kg</span>
+                    </div>
+                  </div>
+                  <div className={`text-right ${deltaColor}`}>
+                    <div className="text-2xl font-bold">{deltaPos ? '+' : ''}{deltaPeso} kg</div>
+                    <div className="text-xs opacity-75">
+                      {objetivo === 'ganar_musculo'
+                        ? (deltaPos ? '¡Ganando masa!' : 'Sin cambio aún')
+                        : (Number(deltaPeso) < 0 ? '¡Bajando peso!' : Number(deltaPeso) > 0 ? 'Subiendo peso' : 'Sin cambio')}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 italic">
+                  Sin registros de peso aún. Registra tu peso con el asistente.
+                </p>
+              )}
+
+              {/* Heatmap */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-400">Entrenamientos — últimos 30 días</p>
+                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                    {progreso?.fechas_30dias?.length ?? 0} días
+                  </span>
+                </div>
+                <MiniHeatmap fechas={progreso?.fechas_30dias ?? []} />
+              </div>
+
+              {/* Racha + contadores */}
+              <div className="flex items-center gap-4 pt-1 border-t border-gray-100 dark:border-gray-700/50">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🔥</span>
+                  <div>
+                    <div className="text-lg font-bold text-gray-800 dark:text-white">{stats?.racha_dias ?? 0} días</div>
+                    <div className="text-xs text-gray-400">racha activa</div>
+                  </div>
+                </div>
+                <div className="w-px h-10 bg-gray-100 dark:bg-gray-700" />
+                <div>
+                  <div className="text-lg font-bold text-gray-800 dark:text-white">{diasMes}</div>
+                  <div className="text-xs text-gray-400">días este mes</div>
+                </div>
+                <div className="w-px h-10 bg-gray-100 dark:bg-gray-700" />
+                <div>
+                  <div className="text-lg font-bold text-gray-800 dark:text-white">{progreso?.fechas_30dias?.length ?? 0}</div>
+                  <div className="text-xs text-gray-400">últimos 30 días</div>
+                </div>
+              </div>
+
+            </div>
+          )}
+        </div>
 
         {/* Accesos rápidos */}
         <div>
@@ -402,13 +543,9 @@ export default function Dashboard({ onLogout }) {
   return (
     <div className="h-screen overflow-hidden bg-gradient-to-br from-emerald-50 via-teal-50/50 to-cyan-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex">
       <Sidebar />
-
-      {/* Contenido principal */}
       <div className="flex-1 flex flex-col min-w-0">
         <MobileHeader />
-
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
-          {/* Vista actual */}
           {vista === 'inicio'   && <VistaInicio />}
           {vista === 'chat'     && <Asistente />}
           {vista === 'graficas' && <MisGraficas />}
@@ -422,7 +559,7 @@ export default function Dashboard({ onLogout }) {
   );
 }
 
-// Lazy-load del panel admin para no incluirlo en el bundle de usuarios normales
+// Lazy-load del panel admin
 function AdminDashboardLoader() {
   const [Comp, setComp] = useState(null);
   useEffect(() => {
