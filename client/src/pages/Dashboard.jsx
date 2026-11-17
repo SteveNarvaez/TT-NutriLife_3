@@ -1,131 +1,297 @@
 import { useState, useEffect, useCallback } from 'react';
+import {
+  House, Bot, ChartColumn, Salad, ShieldCheck, LogOut, Moon, Sun, Menu, X, Scale, Flame, Dumbbell, CalendarCheck,
+  Target, Gauge, ArrowRight, TriangleAlert, Sparkles, Loader2,
+} from 'lucide-react';
 import Asistente from './Asistente';
 import MisGraficas from './MisGraficas';
 import PlanDiario from './PlanDiario';
+import { Logo, PulseLine, MedicalNote } from '../components/Brand';
 
-// ─── Contexto de tema ──────────────────────────────────────────────
+// ─── Tema ──────────────────────────────────────────────────────────
 const initTheme = () => {
   const saved = localStorage.getItem('nl_theme');
   if (saved) return saved;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
 
-// ─── Skeleton loader ───────────────────────────────────────────────
-const Skeleton = ({ w = '100%', h = '1rem', rounded = 'rounded-lg', className = '' }) => (
-  <div
-    className={`animate-pulse bg-gray-200 dark:bg-gray-700 ${rounded} ${className}`}
-    style={{ width: w, height: h }}
-  />
+const NAV = [
+  { id: 'inicio',   icon: House,       label: 'Inicio',        desc: 'Resumen de tu progreso' },
+  { id: 'chat',     icon: Bot,         label: 'Asistente IA',  desc: 'Tu rutina, tu dieta y tus dudas' },
+  { id: 'graficas', icon: ChartColumn, label: 'Mis gráficas',  desc: 'Calorías, macros y constancia' },
+  { id: 'plan',     icon: Salad,       label: 'Plan diario',   desc: 'Tus objetivos de hoy' },
+];
+const NAV_ADMIN = { id: 'admin', icon: ShieldCheck, label: 'Administración', desc: 'Gestión del sistema' };
+
+// ─── Piezas de UI ──────────────────────────────────────────────────
+const Skeleton = ({ className = '' }) => (
+  <div className={`animate-pulse rounded-lg bg-ink-100 dark:bg-white/10 ${className}`} />
 );
 
-// ─── Stat Card ─────────────────────────────────────────────────────
-const StatCard = ({ icon, label, value, unit, color, loading }) => (
-  <div className={`
-    relative overflow-hidden rounded-2xl p-5
-    bg-white/60 dark:bg-gray-800/60 backdrop-blur-md
-    border border-white/30 dark:border-gray-700/50
-    shadow-lg hover:shadow-xl hover:-translate-y-0.5
-    transition-all duration-200
-  `}>
-    <div className={`absolute top-0 right-0 w-20 h-20 rounded-full -mr-6 -mt-6 opacity-10 ${color}`} />
-    <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${color} bg-opacity-15 mb-3`}>
-      <span className="text-xl">{icon}</span>
-    </div>
-    {loading ? (
-      <>
-        <Skeleton h="1.5rem" w="60%" className="mb-1" />
-        <Skeleton h="0.875rem" w="40%" />
-      </>
-    ) : (
-      <>
-        <div className="text-2xl font-bold text-gray-800 dark:text-white">
-          {value ?? '—'} <span className="text-sm font-normal text-gray-500 dark:text-gray-400">{unit}</span>
-        </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{label}</div>
-      </>
-    )}
-  </div>
-);
-
-// ─── Nav item ──────────────────────────────────────────────────────
-const NavItem = ({ icon, label, active, onClick, badge }) => (
-  <button
-    onClick={onClick}
-    className={`
-      w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
-      transition-all duration-150 group relative
-      ${active
-        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
-        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'}
-    `}
-  >
-    <span className="text-lg">{icon}</span>
-    <span className="flex-1 text-left">{label}</span>
-    {badge && (
-      <span className="w-5 h-5 text-xs rounded-full bg-red-500 text-white flex items-center justify-center">
-        {badge}
-      </span>
-    )}
-    {active && (
-      <span className="absolute right-3 w-1.5 h-1.5 rounded-full bg-white/80 animate-pulse" />
-    )}
-  </button>
-);
-
-// ─── Avatar / Initials ─────────────────────────────────────────────
-const Avatar = ({ name, size = 'md' }) => {
-  const initials = (name || 'U').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
-  const sizes = { sm: 'w-8 h-8 text-xs', md: 'w-10 h-10 text-sm', lg: 'w-12 h-12 text-base' };
+const Avatar = ({ name, className = 'h-10 w-10 text-sm' }) => {
+  const initials = (name || 'U').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
   return (
-    <div className={`${sizes[size]} rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white font-bold flex-shrink-0`}>
+    <div className={`${className} flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 font-semibold text-white`}>
       {initials}
     </div>
   );
 };
 
-// ─── Barra de progreso ─────────────────────────────────────────────
-const ProgressBar = ({ value, max, color = 'bg-emerald-500', label }) => {
-  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+const ThemeToggle = ({ theme, onToggle }) => (
+  <button onClick={onToggle} className="btn-ghost h-10 w-10 p-0" aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
+    title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
+    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+  </button>
+);
+
+const NavItem = ({ item, active, onClick }) => {
+  const Icon = item.icon;
   return (
-    <div>
-      {label && <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex justify-between">
-        <span>{label}</span><span>{Math.round(pct)}%</span>
-      </div>}
-      <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-        <div
-          className={`h-full ${color} rounded-full transition-all duration-700 ease-out`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
+    <button onClick={onClick} aria-current={active ? 'page' : undefined}
+      className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+        active
+          ? 'bg-brand-600 text-white shadow-[0_8px_20px_-10px_rgb(24_122_79/0.8)]'
+          : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900 dark:text-ink-300 dark:hover:bg-white/5 dark:hover:text-white'
+      }`}>
+      <Icon size={19} strokeWidth={active ? 2.2 : 1.9} className={active ? '' : 'text-ink-400 group-hover:text-brand-600 dark:group-hover:text-brand-400'} />
+      <span className="flex-1 text-left">{item.label}</span>
+    </button>
   );
 };
+
+function Sidebar({ open, onClose, vista, onNavigate, userName, userRol, onLogout }) {
+  return (
+    <>
+      {open && <div className="fixed inset-0 z-30 bg-ink-950/40 backdrop-blur-sm lg:hidden" onClick={onClose} />}
+      <aside className={`fixed inset-y-0 left-0 z-40 flex w-[264px] flex-col border-r border-ink-100 bg-white transition-transform duration-300
+        dark:border-white/[0.06] dark:bg-ink-900 lg:static lg:translate-x-0 ${open ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
+        <div className="flex items-center justify-between px-5 pb-4 pt-5">
+          <Logo className="h-11" />
+          <button onClick={onClose} className="btn-ghost p-2 lg:hidden" aria-label="Cerrar menú"><X size={18} /></button>
+        </div>
+
+        <nav className="scroll-thin flex-1 space-y-1 overflow-y-auto px-3 py-2" aria-label="Navegación principal">
+          <p className="eyebrow px-3 pb-2 pt-1">Mi espacio</p>
+          {NAV.map(item => (
+            <NavItem key={item.id} item={item} active={vista === item.id} onClick={() => onNavigate(item.id)} />
+          ))}
+          {userRol === 'admin' && (
+            <>
+              <p className="eyebrow px-3 pb-2 pt-5">Gestión</p>
+              <NavItem item={NAV_ADMIN} active={vista === 'admin'} onClick={() => onNavigate('admin')} />
+            </>
+          )}
+        </nav>
+
+        <div className="border-t border-ink-100 p-3 dark:border-white/[0.06]">
+          <div className="flex items-center gap-3 rounded-xl p-2.5">
+            <Avatar name={userName} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-ink-900 dark:text-white">{userName}</p>
+              <p className="text-xs capitalize text-ink-400">{userRol === 'admin' ? 'Administrador' : 'Usuario'}</p>
+            </div>
+            <button onClick={onLogout} title="Cerrar sesión" aria-label="Cerrar sesión"
+              className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10">
+              <LogOut size={18} />
+            </button>
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+const ACENTOS = {
+  blue:   'bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400',
+  amber:  'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
+  violet: 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400',
+  brand:  'bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400',
+};
+
+const StatCard = ({ icon: Icon, label, value, unit, acento, loading }) => (
+  <div className="card card-hover p-5">
+    <div className="flex items-center justify-between">
+      <span className={`icon-tile ${ACENTOS[acento]}`}><Icon size={20} /></span>
+    </div>
+    {loading ? (
+      <div className="mt-4 space-y-2"><Skeleton className="h-7 w-2/3" /><Skeleton className="h-3.5 w-1/2" /></div>
+    ) : (
+      <>
+        <p className="mt-4 text-[26px] font-bold leading-none tracking-tight text-ink-900 tabular-nums dark:text-white">
+          {value ?? '—'} <span className="text-sm font-medium text-ink-400">{value != null ? unit : ''}</span>
+        </p>
+        <p className="mt-1.5 text-[13px] text-ink-500 dark:text-ink-400">{label}</p>
+      </>
+    )}
+  </div>
+);
+
+const ProgressRing = ({ value, max }) => {
+  const pct = max > 0 ? Math.min(value / max, 1) : 0;
+  const r = 42, circ = 2 * Math.PI * r;
+  return (
+    <svg viewBox="0 0 100 100" className="h-28 w-28 -rotate-90">
+      <circle cx="50" cy="50" r={r} className="stroke-ink-100 dark:stroke-white/10" strokeWidth="9" fill="none" />
+      <circle cx="50" cy="50" r={r} className="stroke-brand-500 transition-all duration-700" strokeWidth="9" fill="none"
+        strokeLinecap="round" strokeDasharray={`${pct * circ} ${circ}`} />
+    </svg>
+  );
+};
+
+const OBJETIVOS = {
+  perder_peso: 'Perder peso', ganar_musculo: 'Ganar músculo', mantenimiento: 'Mantenimiento',
+  'perder grasa': 'Perder grasa', 'ganar masa': 'Ganar masa muscular', mantener: 'Mantenimiento',
+};
+
+function VistaInicio({ userName, stats, loading, onNavigate }) {
+  const objetivo = stats?.objetivo_actual;
+  const objetivoLabel = OBJETIVOS[objetivo] || (objetivo ? objetivo.replace(/_/g, ' ') : 'Sin definir');
+  const sesiones = Number(stats?.entrenamientos_mes) || 0;
+
+  const STATS = [
+    { icon: Scale,         label: 'Peso actual',             value: stats?.peso,               unit: 'kg',       acento: 'blue'   },
+    { icon: Flame,         label: 'Meta calórica diaria',    value: stats?.meta_calorica != null ? Math.round(stats.meta_calorica).toLocaleString('es-MX') : null, unit: 'kcal', acento: 'amber' },
+    { icon: Dumbbell,      label: 'Entrenamientos este mes', value: stats?.entrenamientos_mes, unit: 'sesiones', acento: 'violet' },
+    { icon: CalendarCheck, label: 'Racha activa',            value: stats?.racha_dias,         unit: 'días',     acento: 'brand'  },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Bienvenida */}
+      <section className="card relative overflow-hidden p-6 sm:p-7">
+        <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="eyebrow">{new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink-900 sm:text-[28px] dark:text-white">
+              Hola, {userName.split(' ')[0]}
+            </h1>
+            <p className="muted mt-1 max-w-md">Este es el resumen de tu alimentación y entrenamiento. Pide tu plan del día al asistente cuando lo necesites.</p>
+          </div>
+          <button onClick={() => onNavigate('chat')} className="btn-primary btn-lg shrink-0">
+            <Sparkles size={18} /> Hablar con el asistente
+          </button>
+        </div>
+        <PulseLine className="pointer-events-none absolute -right-6 bottom-3 h-16 w-[420px] text-brand-500/15" animated={false} />
+      </section>
+
+      {/* Aviso de triaje */}
+      {!loading && stats && !stats.triaje_completado && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
+          <TriangleAlert size={20} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div>
+            <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">Completa tu evaluación de salud</p>
+            <p className="text-[13px] text-amber-800/80 dark:text-amber-300/80">La necesitamos para personalizar tu plan nutricional y de ejercicio.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Indicadores */}
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        {STATS.map(s => <StatCard key={s.label} {...s} loading={loading} />)}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Perfil de objetivo */}
+        <div className="card p-5 lg:col-span-1">
+          <p className="eyebrow">Tu perfil</p>
+          <div className="mt-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <span className={`icon-tile ${ACENTOS.brand}`}><Target size={20} /></span>
+              <div>
+                <p className="text-xs text-ink-400">Objetivo</p>
+                {loading ? <Skeleton className="mt-1 h-5 w-32" /> : <p className="font-semibold capitalize text-ink-900 dark:text-white">{objetivoLabel}</p>}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className={`icon-tile ${ACENTOS.blue}`}><Gauge size={20} /></span>
+              <div>
+                <p className="text-xs text-ink-400">Nivel de actividad</p>
+                {loading ? <Skeleton className="mt-1 h-5 w-24" /> : (
+                  <p className="font-semibold capitalize text-ink-900 dark:text-white">{stats?.nivel_actividad?.replace(/_/g, ' ') || 'Sin definir'}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Progreso del mes */}
+        <div className="card flex items-center gap-5 p-5 lg:col-span-1">
+          <div className="relative">
+            <ProgressRing value={sesiones} max={20} />
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-xl font-bold text-ink-900 tabular-nums dark:text-white">{loading ? '–' : sesiones}</span>
+              <span className="text-[10px] text-ink-400">de 20</span>
+            </div>
+          </div>
+          <div>
+            <p className="eyebrow">Progreso del mes</p>
+            <p className="mt-2 text-sm text-ink-600 dark:text-ink-300">
+              {sesiones >= 20 ? '¡Meta mensual cumplida!' : `Te faltan ${Math.max(20 - sesiones, 0)} sesiones para tu meta de 20 entrenamientos.`}
+            </p>
+          </div>
+        </div>
+
+        {/* Accesos rápidos */}
+        <div className="card p-5 lg:col-span-1">
+          <p className="eyebrow">Accesos rápidos</p>
+          <div className="mt-3 divide-y divide-ink-100 dark:divide-white/[0.06]">
+            {NAV.slice(1).map(item => {
+              const Icon = item.icon;
+              return (
+                <button key={item.id} onClick={() => onNavigate(item.id)}
+                  className="group flex w-full items-center gap-3 py-3 text-left">
+                  <span className="icon-tile h-9 w-9 bg-ink-50 text-ink-500 transition-colors group-hover:bg-brand-50 group-hover:text-brand-600 dark:bg-white/5 dark:group-hover:bg-brand-500/10">
+                    <Icon size={18} />
+                  </span>
+                  <span className="flex-1">
+                    <span className="block text-sm font-semibold text-ink-800 dark:text-ink-100">{item.label}</span>
+                    <span className="block text-xs text-ink-400">{item.desc}</span>
+                  </span>
+                  <ArrowRight size={16} className="text-ink-300 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-600" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <MedicalNote className="pt-2 text-center" />
+    </div>
+  );
+}
+
+// Carga diferida del panel admin para no incluirlo en el bundle de usuarios normales
+function AdminDashboardLoader() {
+  const [Comp, setComp] = useState(null);
+  useEffect(() => {
+    import('./AdminDashboard').then(m => setComp(() => m.default)).catch(console.error);
+  }, []);
+  if (!Comp) return (
+    <div className="flex h-64 items-center justify-center"><Loader2 size={32} className="animate-spin text-brand-500" /></div>
+  );
+  return <Comp />;
+}
 
 // ════════════════════════════════════════════════════════════════════
 // DASHBOARD PRINCIPAL
 // ════════════════════════════════════════════════════════════════════
 export default function Dashboard({ onLogout }) {
-  const [theme, setTheme]   = useState(initTheme);
-  const [vista, setVista]   = useState('inicio');
-  const [stats, setStats]   = useState(null);
+  const [theme, setTheme]     = useState(initTheme);
+  const [vista, setVista]     = useState('inicio');
+  const [stats, setStats]     = useState(null);
   const [loading, setLoading] = useState(true);
-  const [perfil, setPerfil] = useState(null);
+  const [, setPerfil]         = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const userId   = localStorage.getItem('userId');
   const userName = localStorage.getItem('userName') || 'Usuario';
   const userRol  = localStorage.getItem('userRol')  || 'usuario';
 
-  // ── Tema ──────────────────────────────────────────────────────────
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle('dark', theme === 'dark');
+    document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('nl_theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
-
-  // ── Datos ─────────────────────────────────────────────────────────
   const fetchStats = useCallback(async () => {
     if (!userId) return;
     try {
@@ -134,7 +300,7 @@ export default function Dashboard({ onLogout }) {
       const authHeaders = { Authorization: `Bearer ${token}` };
       const [statsRes, perfilRes] = await Promise.all([
         fetch(`${import.meta.env.VITE_API_URL}/api/graficas/stats/${userId}`, { headers: authHeaders }),
-        fetch(`${import.meta.env.VITE_API_URL}/api/auth/perfil/${userId}`,    { headers: authHeaders })
+        fetch(`${import.meta.env.VITE_API_URL}/api/auth/perfil/${userId}`,    { headers: authHeaders }),
       ]);
       if (statsRes.ok)  setStats(await statsRes.json());
       if (perfilRes.ok) setPerfil(await perfilRes.json());
@@ -147,291 +313,42 @@ export default function Dashboard({ onLogout }) {
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
-  // ── Cerrar sidebar al cambiar vista en móvil ──────────────────────
-  const navigate = (v) => { setVista(v); setSidebarOpen(false); };
-
-  const NAV = [
-    { id: 'inicio',   icon: '🏠', label: 'Inicio'        },
-    { id: 'chat',     icon: '🤖', label: 'Asistente IA'  },
-    { id: 'graficas', icon: '📊', label: 'Mis Gráficas'  },
-    { id: 'plan',     icon: '🥗', label: 'Plan Diario'   },
-  ];
-
-  const STAT_CARDS = [
-    { icon: '⚖️',  label: 'Peso actual',          value: stats?.peso,               unit: 'kg',         color: 'bg-blue-500'    },
-    { icon: '🔥',  label: 'Meta calórica diaria',  value: stats?.meta_calorica,      unit: 'kcal',       color: 'bg-orange-500'  },
-    { icon: '💪',  label: 'Entrenamientos este mes',value: stats?.entrenamientos_mes, unit: 'sesiones',   color: 'bg-violet-500'  },
-    { icon: '📅',  label: 'Racha activa',           value: stats?.racha_dias,         unit: 'días',       color: 'bg-emerald-500' },
-  ];
-
-  // ─── Sidebar ────────────────────────────────────────────────────
-  const Sidebar = () => (
-    <>
-      {/* Overlay móvil */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-20 bg-black/40 backdrop-blur-sm lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      <aside className={`
-        fixed top-0 left-0 h-full z-30
-        w-64 flex flex-col
-        bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl
-        border-r border-gray-100 dark:border-gray-800
-        shadow-2xl lg:shadow-none
-        transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:static lg:z-auto
-      `}>
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 px-5 pt-6 pb-4">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow">
-            <span className="text-white text-lg">🌿</span>
-          </div>
-          <span className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-            NutriLife
-          </span>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="ml-auto lg:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-          >✕</button>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
-          {NAV.map(item => (
-            <NavItem
-              key={item.id}
-              icon={item.icon}
-              label={item.label}
-              active={vista === item.id}
-              onClick={() => navigate(item.id)}
-            />
-          ))}
-
-          {/* Enlace a admin si corresponde */}
-          {userRol === 'admin' && (
-            <>
-              <div className="my-2 border-t border-gray-100 dark:border-gray-800" />
-              <NavItem
-                icon="🛡️"
-                label="Panel de Admin"
-                active={vista === 'admin'}
-                onClick={() => navigate('admin')}
-              />
-            </>
-          )}
-        </nav>
-
-        {/* Perfil usuario */}
-        <div className="p-3 border-t border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/60">
-            <Avatar name={userName} />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{userName}</p>
-              <p className="text-xs text-gray-400 capitalize">{userRol}</p>
-            </div>
-            <button
-              onClick={onLogout}
-              title="Cerrar sesión"
-              className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </aside>
-    </>
-  );
-
-  // ─── Header móvil ─────────────────────────────────────────────
-  const MobileHeader = () => (
-    <div className="lg:hidden flex items-center gap-3 px-4 py-3
-      bg-white/80 dark:bg-gray-900/80 backdrop-blur-md
-      border-b border-gray-100 dark:border-gray-800 sticky top-0 z-10">
-      <button
-        onClick={() => setSidebarOpen(true)}
-        className="text-gray-500 dark:text-gray-300 hover:text-emerald-600"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
-      <span className="flex-1 text-sm font-semibold text-gray-700 dark:text-white">
-        {NAV.find(n => n.id === vista)?.label ?? 'NutriLife'}
-      </span>
-      <ThemeToggle />
-    </div>
-  );
-
-  // ─── Toggle tema ───────────────────────────────────────────────
-  const ThemeToggle = () => (
-    <button
-      onClick={toggleTheme}
-      className="w-9 h-9 flex items-center justify-center rounded-xl
-        bg-gray-100 dark:bg-gray-700
-        hover:bg-gray-200 dark:hover:bg-gray-600
-        text-gray-600 dark:text-gray-300
-        transition-all duration-150"
-      title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
-    >
-      {theme === 'dark' ? '☀️' : '🌙'}
-    </button>
-  );
-
-  // ─── Vista inicio ───────────────────────────────────────────────
-  const VistaInicio = () => {
-    const objetivo = stats?.objetivo_actual;
-    const objetivoLabel = {
-      perder_peso: '⬇️ Perder peso',
-      ganar_musculo: '💪 Ganar músculo',
-      mantenimiento: '⚖️ Mantenimiento',
-    }[objetivo] || (objetivo || 'Sin definir');
-
-    return (
-      <div className="space-y-6">
-        {/* Saludo */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-              ¡Hola, {userName.split(' ')[0]}! 👋
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </p>
-          </div>
-          {/* Theme toggle desktop */}
-          <div className="hidden lg:block">
-            <ThemeToggle />
-          </div>
-        </div>
-
-        {/* Alerta triaje */}
-        {!loading && !stats?.triaje_completado && (
-          <div className="flex items-center gap-3 p-4 rounded-2xl
-            bg-amber-50 dark:bg-amber-900/20
-            border border-amber-200 dark:border-amber-700/50">
-            <span className="text-2xl">⚠️</span>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                Completa tu evaluación de salud
-              </p>
-              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                Para personalizar tu plan nutricional y de ejercicio
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Stats grid */}
-        <div className="grid grid-cols-2 gap-4">
-          {STAT_CARDS.map(card => (
-            <StatCard key={card.label} {...card} loading={loading} />
-          ))}
-        </div>
-
-        {/* Resumen objetivo + nivel */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Objetivo */}
-          <div className="rounded-2xl p-5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md border border-white/30 dark:border-gray-700/50 shadow-lg">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Objetivo</p>
-            {loading ? <Skeleton h="1.5rem" w="70%" /> : (
-              <p className="text-lg font-bold text-gray-800 dark:text-white">{objetivoLabel}</p>
-            )}
-          </div>
-
-          {/* Nivel actividad */}
-          <div className="rounded-2xl p-5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md border border-white/30 dark:border-gray-700/50 shadow-lg">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Nivel de actividad</p>
-            {loading ? <Skeleton h="1.5rem" w="50%" /> : (
-              <p className="text-lg font-bold text-gray-800 dark:text-white capitalize">
-                {stats?.nivel_actividad?.replace(/_/g, ' ') || '—'}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Constancia mes (barra) */}
-        {!loading && stats?.entrenamientos_mes > 0 && (
-          <div className="rounded-2xl p-5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md border border-white/30 dark:border-gray-700/50 shadow-lg">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">Progreso del mes</p>
-            <ProgressBar
-              value={stats.entrenamientos_mes}
-              max={20}
-              label={`${stats.entrenamientos_mes} / 20 sesiones objetivo`}
-            />
-          </div>
-        )}
-
-        {/* Accesos rápidos */}
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Accesos rápidos</p>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { icon: '🤖', label: 'Chat IA', view: 'chat', color: 'from-violet-400 to-purple-600' },
-              { icon: '📊', label: 'Gráficas', view: 'graficas', color: 'from-blue-400 to-cyan-600' },
-              { icon: '🥗', label: 'Mi Plan', view: 'plan', color: 'from-emerald-400 to-teal-600' },
-            ].map(item => (
-              <button
-                key={item.view}
-                onClick={() => setVista(item.view)}
-                className="flex flex-col items-center gap-2 p-4 rounded-2xl
-                  bg-white/60 dark:bg-gray-800/60 backdrop-blur-md
-                  border border-white/30 dark:border-gray-700/50
-                  hover:shadow-lg hover:-translate-y-0.5
-                  transition-all duration-150"
-              >
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center shadow text-lg`}>
-                  {item.icon}
-                </div>
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+  const navigate = (v) => {
+    setVista(v);
+    setSidebarOpen(false);
+    if (v === 'inicio') fetchStats();
   };
 
-  // ─── Render ────────────────────────────────────────────────────
+  const actual = vista === 'admin' ? NAV_ADMIN : NAV.find(n => n.id === vista);
+  const esChat = vista === 'chat';
+
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-emerald-50 via-teal-50/50 to-cyan-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex">
-      <Sidebar />
+    <div className="flex h-dvh overflow-hidden bg-ink-50 dark:bg-ink-950">
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} vista={vista} onNavigate={navigate}
+        userName={userName} userRol={userRol} onLogout={onLogout} />
 
-      {/* Contenido principal */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <MobileHeader />
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Encabezado */}
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-ink-100 bg-white/80 px-4 backdrop-blur-md dark:border-white/[0.06] dark:bg-ink-900/80 lg:px-8">
+          <button onClick={() => setSidebarOpen(true)} className="btn-ghost -ml-2 p-2 lg:hidden" aria-label="Abrir menú"><Menu size={20} /></button>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-[15px] font-semibold text-ink-900 dark:text-white">{actual?.label}</h2>
+            <p className="hidden truncate text-xs text-ink-400 sm:block">{actual?.desc}</p>
+          </div>
+          <ThemeToggle theme={theme} onToggle={() => setTheme(t => (t === 'dark' ? 'light' : 'dark'))} />
+          <div className="hidden sm:block"><Avatar name={userName} className="h-9 w-9 text-xs" /></div>
+        </header>
 
-        <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
-          {/* Vista actual */}
-          {vista === 'inicio'   && <VistaInicio />}
-          {vista === 'chat'     && <Asistente />}
-          {vista === 'graficas' && <MisGraficas />}
-          {vista === 'plan'     && <PlanDiario />}
-          {vista === 'admin'    && userRol === 'admin' && (
-            <AdminDashboardLoader />
-          )}
+        <main className={`flex-1 ${esChat ? 'overflow-hidden p-3 sm:p-5 lg:p-6' : 'scroll-thin overflow-y-auto p-4 sm:p-6 lg:p-8'}`}>
+          <div key={vista} className={`mx-auto w-full max-w-6xl animate-fade-up ${esChat ? 'h-full' : ''}`}>
+            {vista === 'inicio'   && <VistaInicio userName={userName} stats={stats} loading={loading} onNavigate={navigate} />}
+            {vista === 'chat'     && <Asistente />}
+            {vista === 'graficas' && <MisGraficas />}
+            {vista === 'plan'     && <PlanDiario />}
+            {vista === 'admin'    && userRol === 'admin' && <AdminDashboardLoader />}
+          </div>
         </main>
       </div>
     </div>
   );
-}
-
-// Lazy-load del panel admin para no incluirlo en el bundle de usuarios normales
-function AdminDashboardLoader() {
-  const [Comp, setComp] = useState(null);
-  useEffect(() => {
-    import('./AdminDashboard').then(m => setComp(() => m.default)).catch(console.error);
-  }, []);
-  if (!Comp) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
-  return <Comp />;
 }
