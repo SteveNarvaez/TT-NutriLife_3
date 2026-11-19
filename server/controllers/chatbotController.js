@@ -634,7 +634,7 @@ async function obtenerDietaSemana({ id_usuario, proteina_preferida, alimento_pro
           hora:        momento.hora,
           kcal,
           nombre:      `${descripcionProteina} + ${carb.nombre}`,
-          descripcion: `${descripcionProteina} · ${porCarb} ${carb.unidad_medida} ${carb.nombre} · ${porFres} ${fres.unidad_medida} ${fres.nombre}`,
+          descripcion: `${descripcionProteina} - ${grCarb} ${carb.unidad_medida} ${carb.nombre} - ${grFres} ${fres.unidad_medida} ${fres.nombre}`,
           alimentos: [
             { id: pro.id_comida,  nombre: descripcionProteina, porciones: numHuevos, unidad: 'pieza', tipo: 'proteina'   },
             { id: carb.id_comida, nombre: carb.nombre,         porciones: porCarb,   unidad: carb.unidad_medida, tipo: 'guarnicion' },
