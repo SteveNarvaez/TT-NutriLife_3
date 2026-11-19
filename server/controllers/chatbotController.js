@@ -580,11 +580,22 @@ async function obtenerDietaSemana({ id_usuario, proteina_preferida, alimento_pro
     // ── Proteínas para comida/cena según preferencia ──────────────────────────
     // Si el usuario indicó preferencia, filtrar por nombre; si no hay coincidencia, usar todas
     let proteinasFiltradas = todasProteinas;
+
+    // Filtrar alimento prohibido por alergia
+    if (alimento_prohibido) {
+      const prohibido = alimento_prohibido.toLowerCase();
+      proteinasFiltradas = proteinasFiltradas.filter(
+        a => !a.nombre.toLowerCase().includes(prohibido)
+      );
+      // Si filtramos todo, usar lista completa como fallback
+      if (proteinasFiltradas.length === 0) proteinasFiltradas = todasProteinas;
+    }
+
+    // Filtrar por preferencia de proteína
     if (proteina_preferida) {
       const pref = proteina_preferida.toLowerCase();
-      const coincidencias = todasProteinas.filter(a => a.nombre.toLowerCase().includes(pref));
+      const coincidencias = proteinasFiltradas.filter(a => a.nombre.toLowerCase().includes(pref));
       if (coincidencias.length > 0) proteinasFiltradas = coincidencias;
-      // Si no hay coincidencia exacta, se usa el catálogo completo como fallback
     }
 
     const momentos = [
@@ -615,6 +626,9 @@ async function obtenerDietaSemana({ id_usuario, proteina_preferida, alimento_pro
         const porCarb = parseFloat((kcal * 0.40 / carb.calorias_kcal).toFixed(2));
         const porFres = parseFloat((kcal * 0.25 / fres.calorias_kcal).toFixed(2));
 
+        const grCarb = Math.round(porCarb * (carb.cantidad_base || 100));
+        const grFres = Math.round(porFres * (fres.cantidad_base || 100));
+
         dietaBase[momento.nombre] = {
           icon:        momento.icon,
           hora:        momento.hora,
@@ -634,6 +648,10 @@ async function obtenerDietaSemana({ id_usuario, proteina_preferida, alimento_pro
         const porPro  = parseFloat((kcal * 0.35 / pro.calorias_kcal).toFixed(2));
         const porCarb = parseFloat((kcal * 0.40 / carb.calorias_kcal).toFixed(2));
         const porFres = parseFloat((kcal * 0.25 / fres.calorias_kcal).toFixed(2));
+
+        const grPro  = Math.round(porPro  * (pro.cantidad_base  || 100));
+        const grCarb = Math.round(porCarb * (carb.cantidad_base || 100));
+        const grFres = Math.round(porFres * (fres.cantidad_base || 100));
 
         dietaBase[momento.nombre] = {
           icon:        momento.icon,
@@ -725,14 +743,17 @@ async function cambiarComidaHoy({ id_usuario, momento_dia, nuevo_alimento_nombre
   const kcalMomento = planQ.rows[0]?.dieta_json?.[momento_dia]?.kcal || 500;
   const porciones   = parseFloat((kcalMomento * 0.8 / alimento.calorias_kcal).toFixed(2));
 
-  const comidaNueva = {
+const gramosReales = Math.round(porciones * (alimento.cantidad_base || 100));
+
+const comidaNueva = {
     nombre:      alimento.nombre,
-    descripcion: `${porciones} ${alimento.unidad_medida} de ${alimento.nombre}`,
+    descripcion: `${gramosReales} ${alimento.unidad_medida} de ${alimento.nombre}`,
     kcal:        Math.round(alimento.calorias_kcal * porciones),
     alimentos: [{
       id:        alimento.id_comida,
       nombre:    alimento.nombre,
       porciones,
+      gramos_reales: gramosReales,
       unidad:    alimento.unidad_medida,
       tipo:      'sustituto'
     }]
