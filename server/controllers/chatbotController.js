@@ -818,6 +818,53 @@ function detectarAlergias(mensaje) {
 
   return null;
 }
+
+// ── 5. calcularCardioAlternativo ──────────────────────
+async function calcularCardioAlternativo({ id_usuario }) {
+  const result = await pool.query(
+    `SELECT peso_kg, tmb_calculado, objetivo_actual
+     FROM historial_medidas WHERE id_usuario = $1
+     ORDER BY fecha_registro DESC LIMIT 1`,
+    [id_usuario]
+  );
+
+  if (result.rows.length === 0) {
+    return { error: 'No encontré tu perfil. Primero completa tu evaluación.' };
+  }
+
+  const { peso_kg, tmb_calculado, objetivo_actual } = result.rows[0];
+  const obj = (objetivo_actual || '').toLowerCase();
+
+  // Calorías a quemar según objetivo
+  let caloriasObjetivo;
+  if (obj.includes('perder') || obj.includes('grasa')) {
+    caloriasObjetivo = 400;
+  } else if (obj.includes('ganar') || obj.includes('masa')) {
+    caloriasObjetivo = 200;
+  } else {
+    caloriasObjetivo = 300;
+  }
+
+  // MET × 3.5 × peso_kg / 200 = kcal/min
+  const kcalMinCaminar = parseFloat(((3.5  * 3.5 * peso_kg) / 200).toFixed(1));
+  const kcalMinTrotar  = parseFloat(((7.0  * 3.5 * peso_kg) / 200).toFixed(1));
+  const kcalMinCorrer  = parseFloat(((10.0 * 3.5 * peso_kg) / 200).toFixed(1));
+
+  const minCaminar = Math.round(caloriasObjetivo / kcalMinCaminar);
+  const minTrotar  = Math.round(caloriasObjetivo / kcalMinTrotar);
+  const minCorrer  = Math.round(caloriasObjetivo / kcalMinCorrer);
+
+  return {
+    __tipo: 'cardio_alternativo',
+    peso_kg,
+    calorias_objetivo: caloriasObjetivo,
+    opciones: [
+      { actividad: 'Caminar',  emoji: '🚶', minutos: minCaminar, intensidad: 'Baja' },
+      { actividad: 'Trotar',   emoji: '🏃', minutos: minTrotar,  intensidad: 'Media' },
+      { actividad: 'Correr',   emoji: '💨', minutos: minCorrer,  intensidad: 'Alta' },
+    ]
+  };
+}
 // ═══════════════════════════════════════════════════
 // 📋 DECLARACIÓN DE TOOLS PARA GEMINI
 // ═══════════════════════════════════════════════════
@@ -970,7 +1017,18 @@ const tools = [{
         },
         required: ['id_usuario', 'momento_dia', 'nuevo_alimento_nombre']
       }
+    },
+    {
+    name: 'calcularCardioAlternativo',
+    description: 'Calcula opciones de cardio (caminar, trotar, correr) para quemar calorías sin ir al gimnasio. Úsala cuando el usuario diga que no quiere ir al gym, prefiere hacer cardio, actividad al aire libre, o cuando al preguntarle por su split responda que no quiere entrenar en gimnasio.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        id_usuario: { type: 'INTEGER', description: 'ID del usuario' }
+      },
+      required: ['id_usuario']
     }
+  }
   ]
 }];
 
@@ -988,6 +1046,7 @@ const funcionesDisponibles = {
   obtenerRutinaHoy,
   obtenerDietaSemana,
   cambiarComidaHoy,
+  calcularCardioAlternativo,
 };
 
 // Funciones que necesitan id_usuario inyectado automáticamente
@@ -1003,11 +1062,12 @@ const funcionesConUsuario = [
   'obtenerRutinaHoy',
   'obtenerDietaSemana',
   'cambiarComidaHoy',
+  'calcularCardioAlternativo'
 ];
 
 // ═══════════════════════════════════════════════════
 // 🔄 HELPER: Reintento automático para errores 503
-// ═══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 async function llamarGeminiConReintento(payload, intentos = 3, espera = 1500) {
   for (let i = 1; i <= intentos; i++) {
     try {
@@ -1179,7 +1239,12 @@ CONTEXTO DE SESIÓN:
 - NUNCA incluyas "${alimentoProhibido}" ni alimentos que lo contengan en ningún plan, sugerencia o respuesta.
 - Si su dieta semanal ya incluye "${alimentoProhibido}", indícale que puedes cambiarlo con cambiarComidaHoy() y pregúntale por qué momento del día quiere el cambio.
 - Sugiere siempre una alternativa del mismo grupo nutricional (ej: si no puede huevo → queso cottage o pavo; si no puede leche → bebida de soya; si no puede pollo → atún o res).
-- Aplica esta restricción en TODAS las respuestas de esta conversación.`
+- Aplica esta restricción en TODAS las respuestas de esta conversación.
+
+ALTERNATIVA AL GIMNASIO:
+- Si el usuario dice que no quiere ir al gym, prefiere no entrenar en gimnasio, o cuando le preguntes por su split responde que prefiere hacer ejercicio al aire libre o en casa: usa calcularCardioAlternativo() en lugar de sugerirle un split.
+- NUNCA le insistas en que vaya al gym si ya dijo que no quiere.
+- Presenta las opciones de forma amigable mostrando las 3 actividades con sus tiempos y las calorías que quemaría.`
     : ''
 }`;
 
