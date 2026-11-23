@@ -8,6 +8,7 @@ const authRoutes    = require('./routes/authRoutes');
 const chatbotRoutes = require('./routes/chatbotRoutes');
 const triajeRoutes  = require('./routes/triajeRoutes');
 const adminRoutes   = require('./routes/adminRoutes');
+const verifyToken = require('./middleware/verifyToken');
 
 const app = express(); // ← PRIMERO se crea app
 
@@ -32,12 +33,14 @@ app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/triaje',  triajeRoutes);
 app.use('/api/admin',   adminRoutes);
 
-// AQUÍ AGREGAMOS LA NUEVA RUTA PARA LAS GRÁFICAS 
-app.get('/api/graficas/peso/:id_usuario', async (req, res) => {
+// ── RUTAS PROTEGIDAS (requieren token JWT) ──────────────────────────────────
+const protectedRouter = require('express').Router();
+protectedRouter.use(verifyToken); // aplica a TODAS las rutas de este router
+
+// Gráficas de peso
+protectedRouter.get('/graficas/peso/:id_usuario', async (req, res) => {
     try {
         const { id_usuario } = req.params;
-
-        // Buscamos todos los pesos registrados, ordenados del más viejo al más nuevo
         const historialQuery = await pool.query(
             `SELECT peso_kg, fecha_registro 
              FROM historial_medidas 
@@ -45,50 +48,35 @@ app.get('/api/graficas/peso/:id_usuario', async (req, res) => {
              ORDER BY fecha_registro ASC`,
             [id_usuario]
         );
-
-        // Si no hay datos, mandamos un arreglo vacío
-        if (historialQuery.rows.length === 0) {
-            return res.json([]);
-        }
-
-        // Formateamos los datos para que la gráfica de React los entienda fácil
-        const datosGrafica = historialQuery.rows.map(fila => {
-            return {
-                // Formateamos la fecha a algo legible (ej: "15/Oct")
-                fecha: new Date(fila.fecha_registro).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
-                peso: parseFloat(fila.peso_kg)
-            };
-        });
-
+        if (historialQuery.rows.length === 0) return res.json([]);
+        const datosGrafica = historialQuery.rows.map(fila => ({
+            fecha: new Date(fila.fecha_registro).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
+            peso: parseFloat(fila.peso_kg)
+        }));
         res.json(datosGrafica);
-
     } catch (error) {
         console.error("❌ ERROR GET GRAFICAS:", error.message);
         res.status(500).json({ error: "Error al obtener datos para la gráfica" });
     }
 });
-// 👆 FIN DE LA RUTA DE GRÁFICAS 👆
-// 👇 RUTA PARA OBTENER EL PESO ACTUAL (Para calcular el agua) 👇
-app.get('/api/usuario/peso/:id_usuario', async (req, res) => {
+
+// Peso actual (para calcular agua)
+protectedRouter.get('/usuario/peso/:id_usuario', async (req, res) => {
     try {
         const { id_usuario } = req.params;
         const query = await pool.query(
             `SELECT peso_kg FROM historial_medidas WHERE id_usuario = $1 ORDER BY fecha_registro DESC LIMIT 1`,
             [id_usuario]
         );
-        
-        if (query.rows.length > 0) {
-            res.json({ peso: parseFloat(query.rows[0].peso_kg) });
-        } else {
-            res.json({ peso: 70 }); // Un peso promedio por defecto si el usuario es nuevo
-        }
+        res.json({ peso: query.rows.length > 0 ? parseFloat(query.rows[0].peso_kg) : 70 });
     } catch (error) {
         console.error("❌ Error obteniendo peso:", error.message);
         res.status(500).json({ error: "Error en el servidor" });
     }
 });
-/////////
-app.post('/api/rutina/registrar', async (req, res) => {
+
+// Registrar rutina
+protectedRouter.post('/rutina/registrar', async (req, res) => {
   try {
     const { id_usuario } = req.body;
     await pool.query(
@@ -100,32 +88,24 @@ app.post('/api/rutina/registrar', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-//////
-// Registrar comida del Plan Diario en diario_alimentos
-app.post('/api/plandiario/registrar-comida', async (req, res) => {
+
+// Registrar comida del Plan Diario
+protectedRouter.post('/plandiario/registrar-comida', async (req, res) => {
   try {
     const { id_usuario, momento_dia } = req.body;
-
-    // ── 1. Obtener la semana ISO actual ───────────────────────────────────────
     const hoyQ = await pool.query(`SELECT EXTRACT(ISOYEAR FROM CURRENT_DATE) AS anio,
                                           EXTRACT(WEEK    FROM CURRENT_DATE) AS semana`);
-    const anio    = parseInt(hoyQ.rows[0].anio);
-    const semana  = parseInt(hoyQ.rows[0].semana);
-
-    // ── 2. Buscar plan semanal del usuario ────────────────────────────────────
+    const anio   = parseInt(hoyQ.rows[0].anio);
+    const semana = parseInt(hoyQ.rows[0].semana);
     const planQ = await pool.query(
       `SELECT dieta_json FROM plan_dieta_semanal
        WHERE id_usuario = $1 AND anio = $2 AND semana_iso = $3`,
       [id_usuario, anio, semana]
     );
-
     if (planQ.rows.length === 0) {
       return res.json({ success: false, mensaje: 'No tienes dieta generada esta semana. Pide tu dieta al asistente primero.' });
     }
-
     let dietaJson = planQ.rows[0].dieta_json;
-
-    // ── 3. Aplicar override del día si existe ─────────────────────────────────
     const ovQ = await pool.query(
       `SELECT comida_json FROM cambios_dieta_dia
        WHERE id_usuario = $1 AND fecha = CURRENT_DATE AND momento_dia = $2`,
@@ -134,17 +114,12 @@ app.post('/api/plandiario/registrar-comida', async (req, res) => {
     if (ovQ.rows.length > 0) {
       dietaJson = { ...dietaJson, [momento_dia]: ovQ.rows[0].comida_json };
     }
-
-    // ── 4. Extraer alimentos del momento solicitado ───────────────────────────
     const comida = dietaJson[momento_dia];
     if (!comida || !Array.isArray(comida.alimentos) || comida.alimentos.length === 0) {
       return res.json({ success: false, mensaje: `No se encontró "${momento_dia}" en tu plan de esta semana.` });
     }
-
-    // ── 5. Insertar cada alimento en diario_alimentos (ignora duplicados) ─────
     for (const al of comida.alimentos) {
       if (!al.id || al.porciones == null) continue;
-      // Verificar si ya existe antes de insertar
       const existe = await pool.query(
         `SELECT 1 FROM diario_alimentos
          WHERE id_usuario = $1 AND id_alimento = $2 AND momento_dia = $3 AND fecha_registro = CURRENT_DATE`,
@@ -158,54 +133,41 @@ app.post('/api/plandiario/registrar-comida', async (req, res) => {
         );
       }
     }
-
     res.json({ success: true });
   } catch (err) {
     console.error('❌ Error registrar-comida:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
-// 👇 RUTA PARA OBTENER EL HISTORIAL DE CONSTANCIA (Gráfica de barras) 👇
-app.get('/api/graficas/constancia/:id_usuario', async (req, res) => {
+
+// Historial de constancia (gráfica de barras)
+protectedRouter.get('/graficas/constancia/:id_usuario', async (req, res) => {
     try {
         const { id_usuario } = req.params;
-
         const constanciaQuery = await pool.query(
-            `SELECT fecha, porcentaje 
-             FROM constancia_diaria 
-             WHERE id_usuario = $1 
-             ORDER BY fecha ASC`,
+            `SELECT fecha, porcentaje FROM constancia_diaria 
+             WHERE id_usuario = $1 ORDER BY fecha ASC`,
             [id_usuario]
         );
-
-        if (constanciaQuery.rows.length === 0) {
-            return res.json([]);
-        }
-
-        // Formateamos las fechas igual que en la gráfica de peso
+        if (constanciaQuery.rows.length === 0) return res.json([]);
         const datosGrafica = constanciaQuery.rows.map(fila => {
-            // Ajustamos la fecha para evitar problemas de zona horaria añadiendo 'T00:00:00'
             const fechaLimpia = new Date(fila.fecha.toISOString().split('T')[0] + 'T00:00:00');
             return {
                 fecha: fechaLimpia.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
                 porcentaje: fila.porcentaje
             };
         });
-
         res.json(datosGrafica);
-
     } catch (error) {
         console.error("❌ ERROR GET CONSTANCIA:", error.message);
         res.status(500).json({ error: "Error al obtener datos de constancia" });
     }
 });
 
-// 👇 RUTA PARA GUARDAR LA CONSTANCIA (El porcentaje diario) 👇
-app.post('/api/constancia/guardar', async (req, res) => {
+// Guardar constancia
+protectedRouter.post('/constancia/guardar', async (req, res) => {
     try {
         const { id_usuario, porcentaje } = req.body;
-
-        // La magia de PostgreSQL: "Si ya existe la fecha, actualiza; si no, inserta"
         await pool.query(
             `INSERT INTO constancia_diaria (id_usuario, fecha, porcentaje) 
              VALUES ($1, CURRENT_DATE, $2)
@@ -213,15 +175,15 @@ app.post('/api/constancia/guardar', async (req, res) => {
              DO UPDATE SET porcentaje = EXCLUDED.porcentaje`,
             [id_usuario, porcentaje]
         );
-
         res.json({ success: true, message: "Progreso guardado exitosamente" });
     } catch (error) {
         console.error("❌ Error guardando constancia:", error.message);
         res.status(500).json({ error: "Error guardando el progreso" });
     }
 });
-// ── CONSULTAR SI YA GUARDÓ HOY ──
-app.get('/api/constancia/hoy/:id_usuario', async (req, res) => {
+
+// Consultar si ya guardó hoy
+protectedRouter.get('/constancia/hoy/:id_usuario', async (req, res) => {
   try {
     const { id_usuario } = req.params;
     const result = await pool.query(
@@ -239,21 +201,18 @@ app.get('/api/constancia/hoy/:id_usuario', async (req, res) => {
   }
 });
 
-// ── RACHA DE ENTRENAMIENTOS ──
-app.get('/api/graficas/racha/:id_usuario', async (req, res) => {
+// Racha de entrenamientos
+protectedRouter.get('/graficas/racha/:id_usuario', async (req, res) => {
   try {
     const { id_usuario } = req.params;
     const result = await pool.query(
       `SELECT DISTINCT DATE(fecha) as fecha
        FROM progreso_rutinas
-       WHERE id_usuario = $1
-       AND fecha >= NOW() - INTERVAL '90 days'
+       WHERE id_usuario = $1 AND fecha >= NOW() - INTERVAL '90 days'
        ORDER BY fecha ASC`,
       [id_usuario]
     );
     const fechasEntrenadas = result.rows.map(r => r.fecha.toISOString().split('T')[0]);
-
-    // Calcular racha consecutiva hacia atrás desde hoy
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
     let rachaConsecutiva = 0;
@@ -261,21 +220,17 @@ app.get('/api/graficas/racha/:id_usuario', async (req, res) => {
       const dia = new Date(hoy);
       dia.setDate(hoy.getDate() - i);
       const diaStr = dia.toISOString().split('T')[0];
-      if (fechasEntrenadas.includes(diaStr)) {
-        rachaConsecutiva++;
-      } else {
-        break; // se rompe la racha
-      }
+      if (fechasEntrenadas.includes(diaStr)) rachaConsecutiva++;
+      else break;
     }
-
     res.json({ fechas: fechasEntrenadas, racha_consecutiva: rachaConsecutiva });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── MACROS DEL DÍA ──
-app.get('/api/graficas/macros/:id_usuario', async (req, res) => {
+// Macros del día
+protectedRouter.get('/graficas/macros/:id_usuario', async (req, res) => {
   try {
     const { id_usuario } = req.params;
     const result = await pool.query(
@@ -295,21 +250,16 @@ app.get('/api/graficas/macros/:id_usuario', async (req, res) => {
   }
 });
 
-// ── STATS RESUMEN ──
-app.get('/api/graficas/stats/:id_usuario', async (req, res) => {
+// Stats resumen
+protectedRouter.get('/graficas/stats/:id_usuario', async (req, res) => {
   try {
     const { id_usuario } = req.params;
-
     const perfil = await pool.query(
       `SELECT peso_kg, tmb_calculado, nivel_actividad, objetivo_actual
        FROM historial_medidas WHERE id_usuario = $1
        ORDER BY fecha_registro DESC LIMIT 1`,
       [id_usuario]
     );
-
-    // Verificar si el usuario completó el triaje comprobando si existe un registro
-    // Se intenta leer triaje_completado; si la columna no existe en BD antigua,
-    // se cae al fallback de COUNT(*) para máxima compatibilidad.
     let triajeCompletado = false;
     try {
       const triaje = await pool.query(
@@ -318,15 +268,12 @@ app.get('/api/graficas/stats/:id_usuario', async (req, res) => {
       );
       triajeCompletado = triaje.rows[0]?.triaje_completado || false;
     } catch (triajeErr) {
-      // La columna triaje_completado no existe en esta BD (versión antigua del schema)
-      // Determinamos triaje por existencia del registro
       const triajeExiste = await pool.query(
         `SELECT COUNT(*) as total FROM perfil_salud_triaje WHERE id_usuario = $1`,
         [id_usuario]
       );
       triajeCompletado = parseInt(triajeExiste.rows[0]?.total || 0) > 0;
     }
-
     const entrenamientos = await pool.query(
       `SELECT COUNT(*) as total FROM progreso_rutinas
        WHERE id_usuario = $1 AND fecha >= date_trunc('month', NOW())`,
@@ -338,7 +285,6 @@ app.get('/api/graficas/stats/:id_usuario', async (req, res) => {
        WHERE id_usuario = $1 AND fecha >= NOW() - INTERVAL '30 days'`,
       [id_usuario]
     );
-
     res.json({
       peso:                perfil.rows[0]?.peso_kg || 0,
       meta_calorica:       perfil.rows[0]?.tmb_calculado || 0,
@@ -354,31 +300,22 @@ app.get('/api/graficas/stats/:id_usuario', async (req, res) => {
   }
 });
 
-// ── TEST: llamar registrar-comida con verbose para ver exactamente qué pasa ──
-app.get('/api/debug/test-registrar/:id_usuario/:momento', async (req, res) => {
+// Debug routes (solo para desarrollo — considera eliminarlas en producción)
+protectedRouter.get('/debug/test-registrar/:id_usuario/:momento', async (req, res) => {
   const { id_usuario, momento } = req.params;
   try {
     const hoyQ = await pool.query(`SELECT EXTRACT(ISOYEAR FROM CURRENT_DATE) AS anio,
                                           EXTRACT(WEEK    FROM CURRENT_DATE) AS semana`);
     const anio   = parseInt(hoyQ.rows[0].anio);
     const semana = parseInt(hoyQ.rows[0].semana);
-
     const planQ = await pool.query(
       `SELECT dieta_json FROM plan_dieta_semanal WHERE id_usuario = $1 AND anio = $2 AND semana_iso = $3`,
       [id_usuario, anio, semana]
     );
-
-    if (planQ.rows.length === 0) {
-      return res.json({ paso: 'plan_no_encontrado', anio, semana, id_usuario });
-    }
-
+    if (planQ.rows.length === 0) return res.json({ paso: 'plan_no_encontrado', anio, semana, id_usuario });
     const dietaJson = planQ.rows[0].dieta_json;
     const comida    = dietaJson[momento];
-
-    if (!comida) {
-      return res.json({ paso: 'momento_no_encontrado', momento, claves_en_json: Object.keys(dietaJson) });
-    }
-
+    if (!comida) return res.json({ paso: 'momento_no_encontrado', momento, claves_en_json: Object.keys(dietaJson) });
     const insertados = [];
     for (const al of (comida.alimentos || [])) {
       if (!al.id || al.porciones == null) { insertados.push({ al, skip: 'sin id o porciones' }); continue; }
@@ -398,15 +335,13 @@ app.get('/api/debug/test-registrar/:id_usuario/:momento', async (req, res) => {
         insertados.push({ alimento: al.nombre, id: al.id, insertado: false, razon: 'ya existía' });
       }
     }
-
     res.json({ paso: 'ok', anio, semana, momento, alimentos_en_plan: comida.alimentos, insertados });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── DIAGNÓSTICO: ver qué hay en las tablas clave para un usuario hoy ──
-app.get('/api/debug/:id_usuario', async (req, res) => {
+protectedRouter.get('/debug/:id_usuario', async (req, res) => {
   const { id_usuario } = req.params;
   try {
     const [diario, constancia, rutina, planSemanal] = await Promise.all([
@@ -418,14 +353,8 @@ app.get('/api/debug/:id_usuario', async (req, res) => {
          WHERE d.id_usuario = $1 AND d.fecha_registro = CURRENT_DATE`,
         [id_usuario]
       ),
-      pool.query(
-        `SELECT * FROM constancia_diaria WHERE id_usuario = $1 AND fecha = CURRENT_DATE`,
-        [id_usuario]
-      ),
-      pool.query(
-        `SELECT * FROM progreso_rutinas WHERE id_usuario = $1 ORDER BY fecha DESC LIMIT 5`,
-        [id_usuario]
-      ),
+      pool.query(`SELECT * FROM constancia_diaria WHERE id_usuario = $1 AND fecha = CURRENT_DATE`, [id_usuario]),
+      pool.query(`SELECT * FROM progreso_rutinas WHERE id_usuario = $1 ORDER BY fecha DESC LIMIT 5`, [id_usuario]),
       pool.query(
         `SELECT anio, semana_iso, fenotipo, calorias_objetivo,
                 jsonb_object_keys(dieta_json) as momentos_disponibles
@@ -435,46 +364,38 @@ app.get('/api/debug/:id_usuario', async (req, res) => {
       ),
     ]);
     res.json({
-      diario_alimentos_hoy:    diario.rows,
-      constancia_hoy:          constancia.rows,
+      diario_alimentos_hoy:      diario.rows,
+      constancia_hoy:            constancia.rows,
       progreso_rutinas_reciente: rutina.rows,
-      plan_dieta_semanal:      planSemanal.rows,
+      plan_dieta_semanal:        planSemanal.rows,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── PROGRESO DEL USUARIO (peso + entrenamientos últimos 30 días) ──
-app.get('/api/graficas/progreso/:id_usuario', async (req, res) => {
+// Progreso (peso + entrenamientos últimos 30 días)
+protectedRouter.get('/graficas/progreso/:id_usuario', async (req, res) => {
   try {
     const { id_usuario } = req.params;
-
     const [pesoRes, fechasRes] = await Promise.all([
-      // Peso inicial y actual desde historial_medidas
       pool.query(
-        `SELECT peso_kg, fecha_registro
-         FROM historial_medidas
-         WHERE id_usuario = $1
-         ORDER BY fecha_registro ASC`,
+        `SELECT peso_kg, fecha_registro FROM historial_medidas
+         WHERE id_usuario = $1 ORDER BY fecha_registro ASC`,
         [id_usuario]
       ),
-      // Fechas de entrenamiento en los últimos 30 días
       pool.query(
         `SELECT DISTINCT DATE(fecha)::text AS fecha
          FROM progreso_rutinas
-         WHERE id_usuario = $1
-           AND fecha >= NOW() - INTERVAL '30 days'
+         WHERE id_usuario = $1 AND fecha >= NOW() - INTERVAL '30 days'
          ORDER BY fecha ASC`,
         [id_usuario]
       ),
     ]);
-
     const medidas = pesoRes.rows;
-
     res.json({
-      peso_inicial: medidas.length > 0 ? parseFloat(medidas[0].peso_kg) : null,
-      peso_actual:  medidas.length > 0 ? parseFloat(medidas[medidas.length - 1].peso_kg) : null,
+      peso_inicial:  medidas.length > 0 ? parseFloat(medidas[0].peso_kg) : null,
+      peso_actual:   medidas.length > 0 ? parseFloat(medidas[medidas.length - 1].peso_kg) : null,
       fecha_inicial: medidas.length > 0 ? medidas[0].fecha_registro : null,
       fechas_30dias: fechasRes.rows.map(r => r.fecha),
     });
@@ -483,6 +404,9 @@ app.get('/api/graficas/progreso/:id_usuario', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Montar el router protegido en /api
+app.use('/api', protectedRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Servidor corriendo en http://localhost:${PORT}`));
