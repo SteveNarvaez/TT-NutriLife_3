@@ -283,8 +283,8 @@ async function generarDietaCompleta({ id_usuario }) {
 // ── Helper: ajuste calórico según fenotipo ───────────
 function ajusteFenotipo(fenotipo) {
   const f = (fenotipo || '').toLowerCase();
-  if (f.includes('endo')) return -400;   // endomorfo: déficit
-  if (f.includes('ecto')) return +400;   // ectomorfo: superávit
+  if (f.includes('endo')) return -150;   // endomorfo: déficit
+  if (f.includes('ecto')) return +150;   // ectomorfo: superávit
   return 0;                              // mesomorfo: mantenimiento
 }
 
