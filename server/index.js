@@ -1,3 +1,4 @@
+process.env.TZ = 'America/Mexico_City';  // ←  se establece la zona horaria antes de importar cualquier módulo que use fechas
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
