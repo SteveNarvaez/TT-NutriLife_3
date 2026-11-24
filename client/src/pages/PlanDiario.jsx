@@ -28,7 +28,9 @@ const PlanDiario = ({ userId }) => {
     const init = async () => {
       // 1. Calcular litros de agua según peso
       try {
-        const r = await fetch(`${API}/usuario/peso/${uid}`);
+        const r = await fetch(`${API}/usuario/peso/${uid}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
         const d = await r.json();
         const peso = Number(d.peso);
         const titulo = peso > 0
@@ -39,7 +41,9 @@ const PlanDiario = ({ userId }) => {
 
       // 2. Ver si ya guardó hoy → bloquear si es así
       try {
-        const r = await fetch(`${API}/constancia/hoy/${uid}`);
+        const r = await fetch(`${API}/constancia/hoy/${uid}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
         const d = await r.json();
         if (d.yaGuardado) {
           setYaGuardadoHoy(d.porcentaje);
@@ -75,10 +79,10 @@ const PlanDiario = ({ userId }) => {
       if (momento) {
         try {
           await fetch(`${API}/plandiario/registrar-comida`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_usuario: uid, momento_dia: momento }),
-          });
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+          body: JSON.stringify({ id_usuario: uid, momento_dia: momento }),
+        });
         } catch { /* no crítico */ }
       }
     }
@@ -104,29 +108,29 @@ const PlanDiario = ({ userId }) => {
           const momento = momentoMap[t.titulo];
           if (!momento) return Promise.resolve();
           return fetch(`${API}/plandiario/registrar-comida`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_usuario: uid, momento_dia: momento }),
-          }).catch(() => {}); // no crítico si falla uno
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+          body: JSON.stringify({ id_usuario: uid, momento_dia: momento }),
+        }).catch(() => {});
         })
       );
 
       // 2. Guardar porcentaje de constancia
       const r1 = await fetch(`${API}/constancia/guardar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_usuario: uid, porcentaje: progreso }),
-      });
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({ id_usuario: uid, porcentaje: progreso }),
+    });
       if (!r1.ok) throw new Error('Error al guardar constancia');
 
       // 3. Registrar entrenamiento si marcó la rutina
       const hizoEjercicio = tareas.find(t => t.tipo === 'ejercicio')?.completado;
       if (hizoEjercicio) {
         await fetch(`${API}/rutina/registrar`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id_usuario: uid }),
-        });
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify({ id_usuario: uid }),
+      });
       }
 
       // ✅ Marcar como ya guardado → bloquea la UI hasta mañana

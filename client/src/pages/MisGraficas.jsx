@@ -138,16 +138,18 @@ const MisGraficas = ({ userId }) => {
   const [cargando,   setCargando]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const cargar = useCallback(async (esRefresh = false) => {
-    const id = userId || localStorage.getItem('userId');
-    if (!id) { setCargando(false); return; }
-    if (esRefresh) setRefreshing(true);
-    try {
-      const [resMacros, resStats, resRacha] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL}/api/graficas/macros/${id}`),
-        fetch(`${import.meta.env.VITE_API_URL}/api/graficas/stats/${id}`),
-        fetch(`${import.meta.env.VITE_API_URL}/api/graficas/racha/${id}`),
-      ]);
+const cargar = useCallback(async (esRefresh = false) => {
+  const id = userId || localStorage.getItem('userId');
+  if (!id) { setCargando(false); return; }
+  if (esRefresh) setRefreshing(true);
+  try {
+    const token = localStorage.getItem('token');  // verify token
+    const headers = { Authorization: `Bearer ${token}` };  // verify token
+    const [resMacros, resStats, resRacha] = await Promise.all([
+      fetch(`${import.meta.env.VITE_API_URL}/api/graficas/macros/${id}`, { headers }),  
+      fetch(`${import.meta.env.VITE_API_URL}/api/graficas/stats/${id}`,  { headers }),  
+      fetch(`${import.meta.env.VITE_API_URL}/api/graficas/racha/${id}`,  { headers }),  
+    ]);
       const [dataMacros, dataStats, dataRacha] = await Promise.all([resMacros.json(), resStats.json(), resRacha.json()]);
       setMacros(dataMacros);
       setStats(dataStats);
