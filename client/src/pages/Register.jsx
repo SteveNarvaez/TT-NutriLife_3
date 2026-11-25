@@ -101,9 +101,8 @@ const Register = () => {
       }
       sessionStorage.removeItem('triaje_data');
 
-      // 3. Mostrar pantalla de verificación
-      setEmailRegistrado(formData.email);
-      setRegistrado(true);
+      // 3. Ir directo al login
+      window.location.href = '/login';
     } catch (err) {
       const mensaje = err.response?.data?.error || 'No pudimos conectar con el servidor. Intenta de nuevo.';
       if (mensaje.includes('usuarios_email_key') || mensaje.includes('ya está registrado')) {
